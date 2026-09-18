@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1a1a1a"/>
+  <!-- Film strip body -->
+  <rect x="96" y="160" width="320" height="192" rx="16" fill="#e5a00d"/>
+  <!-- Sprocket holes left -->
+  <rect x="72" y="184" width="32" height="32" rx="6" fill="#0f0f0f"/>
+  <rect x="72" y="240" width="32" height="32" rx="6" fill="#0f0f0f"/>
+  <rect x="72" y="296" width="32" height="32" rx="6" fill="#0f0f0f"/>
+  <!-- Sprocket holes right -->
+  <rect x="408" y="184" width="32" height="32" rx="6" fill="#0f0f0f"/>
+  <rect x="408" y="240" width="32" height="32" rx="6" fill="#0f0f0f"/>
+  <rect x="408" y="296" width="32" height="32" rx="6" fill="#0f0f0f"/>
+  <!-- Film frames -->
+  <rect x="128" y="188" width="72" height="136" rx="8" fill="#0f0f0f"/>
+  <rect x="220" y="188" width="72" height="136" rx="8" fill="#0f0f0f"/>
+  <rect x="312" y="188" width="72" height="136" rx="8" fill="#0f0f0f"/>
+  <!-- Play triangle in center frame -->
+  <polygon points="240,228 240,300 304,264" fill="#e5a00d"/>
+</svg>

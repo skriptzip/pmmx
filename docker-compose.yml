@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pmmx
+      POSTGRES_USER: pmmx
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pmmx}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pmmx"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pmmx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      DATABASE__URL: postgresql+asyncpg://pmmx:${POSTGRES_PASSWORD:-pmmx}@db:5432/pmmx
+    env_file:
+      - path: .env
+        required: false
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - pmmx
+
+  ntfy:
+    image: binwiederhier/ntfy
+    restart: unless-stopped
+    command: serve
+    ports:
+      - "8080:80"
+    volumes:
+      - ntfy_data:/var/lib/ntfy
+
+volumes:
+  db_data:
+  ntfy_data:

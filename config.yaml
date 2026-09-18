@@ -1,0 +1,8 @@
+secret_key: "change-me-generate-a-random-32-char-string-in-production"
+
+tmdb:
+  api_key: ""
+
+scan:
+  full_scan_cron: "0 3 * * *"
+  availability_check_cron: "0 2 * * *"

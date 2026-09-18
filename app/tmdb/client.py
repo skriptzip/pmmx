@@ -1,0 +1,72 @@
+from __future__ import annotations
+
+import logging
+import time
+
+import requests
+import tmdbsimple as tmdb
+
+logger = logging.getLogger(__name__)
+
+_MAX_RETRIES = 5
+
+
+class TMDbClient:
+    def __init__(self, api_key: str) -> None:
+        tmdb.API_KEY = api_key
+
+    def _call(self, fn, **kwargs) -> dict:
+        for attempt in range(_MAX_RETRIES):
+            try:
+                return fn(**kwargs)
+            except requests.exceptions.HTTPError as exc:
+                if exc.response.status_code == 429:
+                    wait = min(int(exc.response.headers.get("Retry-After", 2 ** attempt)), 30)
+                    logger.warning("TMDb rate limit — waiting %ds (attempt %d)", wait, attempt + 1)
+                    time.sleep(wait)
+                    continue
+                raise
+        return fn(**kwargs)
+
+    def get_movie(self, tmdb_id: int) -> dict:
+        return self._call(tmdb.Movies(tmdb_id).info, append_to_response="belongs_to_collection")
+
+    def get_collection(self, collection_id: int) -> dict:
+        return self._call(tmdb.Collections(collection_id).info)
+
+    def get_show(self, tmdb_id: int) -> dict:
+        return self._call(tmdb.TV(tmdb_id).info)
+
+    def get_season(self, tmdb_id: int, season_number: int) -> dict:
+        return self._call(tmdb.TV_Seasons(tmdb_id, season_number).info)
+
+    def get_watch_providers(self, tmdb_id: int, media_type: str) -> dict[str, list[dict]]:
+        """Return {region_code: [{"name": str, "provider_id": int}]} for subscription services."""
+        if media_type == "movie":
+            obj = tmdb.Movies(tmdb_id)
+        else:
+            obj = tmdb.TV(tmdb_id)
+        response = self._call(obj.watch_providers)
+        result: dict[str, list[dict]] = {}
+        for region, data in response.get("results", {}).items():
+            watch_link = data.get("link", "")
+            providers: list[dict] = []
+            seen: set[int] = set()
+            for provider_type in ("flatrate", "rent", "buy"):
+                for s in data.get(provider_type, []):
+                    pid = s["provider_id"]
+                    if pid not in seen:
+                        seen.add(pid)
+                        providers.append({
+                            "name": s["provider_name"],
+                            "provider_id": pid,
+                            "logo_path": s.get("logo_path"),
+                            "type": provider_type,
+                            "watch_link": watch_link,
+                        })
+            if providers:
+                result[region] = providers
+        return result
+
+    def close(self) -> None:
+        pass
