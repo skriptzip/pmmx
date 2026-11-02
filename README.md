@@ -63,7 +63,7 @@ frontend/           React-App
 
 ## Installation mit Docker
 
-Voraussetzungen: Docker mit Compose und ein [TMDb-API-Key](https://www.themoviedb.org/settings/api).
+Voraussetzungen: Docker mit Compose und ein [TMDb-API-Key oder Read Access Token](https://www.themoviedb.org/settings/api) (beides wird unterstützt).
 1. Repository klonen.
 2. `.env.example` nach `.env` kopieren und `POSTGRES_PASSWORD`, `SECRET_KEY` (jeweils z. B. `openssl rand -hex 32`) und `TMDB__API_KEY` setzen. Für die Streaming-Prüfung kommt `STREAMING__API_KEY` (Watchmode) dazu. Lokal ohne Traefik: `DOMAIN=localhost` und mit `docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build` starten (vorher einmal `docker network create traefik`).
 3. Starten:

@@ -11,9 +11,30 @@ logger = logging.getLogger(__name__)
 _MAX_RETRIES = 5
 
 
+class _BearerSession(requests.Session):
+    """Sends a v4 read access token as Bearer header instead of the api_key query param."""
+
+    def __init__(self, token: str) -> None:
+        super().__init__()
+        self.headers["Authorization"] = f"Bearer {token}"
+
+    def request(self, method, url, params=None, **kwargs):
+        if isinstance(params, dict):
+            params = {k: v for k, v in params.items() if k != "api_key"}
+        return super().request(method, url, params=params, **kwargs)
+
+
+def _is_v4_token(key: str) -> bool:
+    # v3 keys are 32 hex chars, v4 read access tokens are JWTs (eyJ...)
+    return key.startswith("eyJ") and key.count(".") == 2
+
+
 class TMDbClient:
     def __init__(self, api_key: str) -> None:
+        api_key = api_key.strip()
         tmdb.API_KEY = api_key
+        if _is_v4_token(api_key):
+            tmdb.REQUESTS_SESSION = _BearerSession(api_key)
 
     def _call(self, fn, **kwargs) -> dict:
         for attempt in range(_MAX_RETRIES):
@@ -25,7 +46,12 @@ class TMDbClient:
                     logger.warning("TMDb rate limit — waiting %ds (attempt %d)", wait, attempt + 1)
                     time.sleep(wait)
                     continue
-                raise
+                # the original message contains the request URL including api_key
+                url = exc.response.url.split("?", 1)[0]
+                raise requests.exceptions.HTTPError(
+                    f"{exc.response.status_code} {exc.response.reason} for url: {url}",
+                    response=exc.response,
+                ) from None
         return fn(**kwargs)
 
     def get_movie(self, tmdb_id: int) -> dict:
