@@ -79,6 +79,9 @@ export interface LibraryShow {
   episodes_total: number
   episodes_present: number
   missing_count: number
+  upcoming_count: number
+  streamable_count: number
+  streaming_services: StreamingService[]
   status: 'complete' | 'incomplete'
 }
 

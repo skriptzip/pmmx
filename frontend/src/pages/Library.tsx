@@ -4,13 +4,13 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getLibraryMovies, getLibraryShows, getMissingEpisodes } from '../api/client'
 import type { LibraryMovie, LibraryShow, MissingEpisode, StreamingService } from '../api/types'
-import { PosterProviders } from '../components/ProviderLogos'
+import { PosterProviders, ProviderLogos } from '../components/ProviderLogos'
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w300'
 const TMDB_LOGO = 'https://image.tmdb.org/t/p/w45'
 
 type MovieFilter = 'all' | 'present' | 'missing' | 'upcoming' | 'streamable'
-type ShowFilter  = 'all' | 'complete' | 'incomplete'
+type ShowFilter  = 'all' | 'complete' | 'incomplete' | 'upcoming' | 'streamable'
 
 const MOVIE_FILTERS: { label: string; value: MovieFilter }[] = [
   { label: 'Alles', value: 'all' },
@@ -24,6 +24,8 @@ const SHOW_FILTERS: { label: string; value: ShowFilter }[] = [
   { label: 'Alles', value: 'all' },
   { label: 'Komplett', value: 'complete' },
   { label: 'Unvollständig', value: 'incomplete' },
+  { label: 'Bald', value: 'upcoming' },
+  { label: 'Verfügbar', value: 'streamable' },
 ]
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -179,6 +181,8 @@ function ShowPosterItem({ show, onClick }: { show: LibraryShow; onClick: () => v
   const pct = show.episodes_total > 0
     ? (show.episodes_present / show.episodes_total) * 100
     : 100
+  const pureMissing = Math.max(0, show.missing_count - show.upcoming_count - show.streamable_count)
+  const overlay = pureMissing > 0 ? 'missing' : show.streamable_count > 0 ? 'streamable' : 'upcoming'
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -189,10 +193,14 @@ function ShowPosterItem({ show, onClick }: { show: LibraryShow; onClick: () => v
         ) : (
           <div className="poster-placeholder">{show.title}</div>
         )}
-        {show.status === 'incomplete' && <div className="poster-overlay incomplete" />}
-        {show.status === 'incomplete' && show.missing_count > 0 && (
-          <div className="poster-badge incomplete">{show.missing_count} fehlt</div>
+        {show.status === 'incomplete' && <div className={`poster-overlay ${overlay}`} />}
+        {(pureMissing > 0 || show.upcoming_count > 0) && (
+          <div className="poster-badges">
+            {pureMissing > 0 && <div className="poster-badge missing">{pureMissing} fehlt</div>}
+            {show.upcoming_count > 0 && <div className="poster-badge upcoming">{show.upcoming_count} bald</div>}
+          </div>
         )}
+        <PosterProviders services={show.streaming_services} />
         <div className="poster-title-bar">
           {show.title}{show.year ? ` (${show.year})` : ''}
         </div>
@@ -292,6 +300,15 @@ function ShowDetailPanel({ show, onClose }: { show: LibraryShow; onClose: () => 
           </button>
         </div>
 
+        {show.streaming_services.length > 0 && (
+          <div style={{ padding: '0 16px 8px' }}>
+            <div className="season-header">
+              Verfügbar bei{show.streamable_count > 0 ? ` (${show.streamable_count} Episoden)` : ''}
+            </div>
+            <ProviderLogos services={show.streaming_services} />
+          </div>
+        )}
+
         {/* Season / episode list */}
         <div style={{ padding: '0 16px' }}>
           {isLoading && (
@@ -314,7 +331,7 @@ function ShowDetailPanel({ show, onClose }: { show: LibraryShow; onClose: () => 
                     <span className="ep-code">S{pad(ep.season_number)}E{pad(ep.episode_number)}</span>
                     <span className="ep-title">{ep.episode_title || '–'}</span>
                     <span className={`badge badge-${ep.status}`} style={{ flexShrink: 0 }}>
-                      {ep.status === 'missing' ? 'Fehlt' : ep.status === 'upcoming' ? 'Bald' : 'Stream'}
+                      {ep.status === 'missing' ? 'Fehlt' : ep.status === 'upcoming' ? 'Bald' : 'Verfügbar'}
                     </span>
                   </div>
                 ))}
