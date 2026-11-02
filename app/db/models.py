@@ -95,6 +95,7 @@ class MissingAudio(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     plex_key = Column(Integer, nullable=False)
+    show_plex_key = Column(Integer, nullable=True, index=True)  # set for episodes
     title = Column(String, nullable=False)
     media_type = Column(String, default="movie")  # movie | episode
     missing_audio_langs = Column(Text, default="[]")
@@ -152,7 +153,7 @@ class ScanRun(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    scan_type = Column(String, nullable=False)   # full | availability
+    scan_type = Column(String, nullable=False)   # full | availability | plex
     started_at = Column(DateTime(timezone=True), default=_now)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     status = Column(String, default="running")   # running | completed | failed
@@ -169,6 +170,15 @@ class TmdbProviderCache(Base):
     media_type = Column(String(10), primary_key=True)  # "movie" or "tv"
     data_json  = Column(Text, nullable=False, default="{}")  # {region: [{name, provider_id, ...}]}
     cached_at  = Column(DateTime(timezone=True), nullable=False, default=_now)
+
+
+class TmdbResponseCache(Base):
+    """Trimmed TMDb responses (movie, collection, show, season, id lookups), shared across users."""
+    __tablename__ = "tmdb_response_cache"
+
+    key       = Column(String, primary_key=True)  # e.g. "season:1399:2"
+    data_json = Column(Text, nullable=False, default="{}")
+    cached_at = Column(DateTime(timezone=True), nullable=False, default=_now)
 
 
 class NotificationSent(Base):

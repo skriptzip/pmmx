@@ -12,12 +12,19 @@ from app.checkers.audio_subtitle import find_missing_languages
 from app.config import Settings
 from app.db.models import LibraryMovie, LibraryShow, MissingAudio, MissingEpisode, MissingMovie, NotificationSent, ScanRun, User
 from app.matching.movies import find_missing_movies
-from app.matching.series import find_missing_episodes
+from app.matching.series import check_show, find_missing_episodes
 from app.notifications.notifier import NotificationConfig, Notifier
 from app.plex.scanner import PlexScanner
 from app.scan.progress import clear_progress, set_progress
+from app.scan.rescan import apply_plex_state
 from app.streaming.availability import provider_matches_owned
-from app.tmdb.cache import get_cached_providers, set_cached_providers
+from app.tmdb.cache import (
+    ResponseCache,
+    get_cached_providers,
+    load_response_cache,
+    save_response_cache,
+    set_cached_providers,
+)
 from app.tmdb.client import TMDbClient
 
 logger = logging.getLogger(__name__)
@@ -33,8 +40,22 @@ class ScanOrchestrator:
         self.settings = settings
         self.db = db
         self._scanner = PlexScanner(user.plex_token, user.server_name)
-        self._tmdb = TMDbClient(settings.tmdb.api_key)
+        self._cache = ResponseCache()
+        self._tmdb = TMDbClient(settings.tmdb.api_key, self._cache)
         self._notifier = self._build_notifier()
+
+    async def _load_cache(self) -> None:
+        """Fill the TMDb response cache from the DB; call before any scan that uses matching."""
+        loaded = await load_response_cache(self.db)
+        self._cache = loaded
+        self._tmdb = TMDbClient(self.settings.tmdb.api_key, loaded)
+
+    async def _save_cache(self) -> None:
+        try:
+            await save_response_cache(self.db, self._cache)
+        except Exception:
+            await self.db.rollback()
+            logger.exception("Could not persist TMDb response cache")
 
     def _build_notifier(self) -> Notifier:
         nc = json.loads(self.user.notification_config) if self.user.notification_config else {}
@@ -73,7 +94,8 @@ class ScanOrchestrator:
         uid = self.user.id
         set_progress(uid, stage="plex", current_item="Verbinde mit Plex…")
         try:
-            movies = await asyncio.to_thread(self._scanner.get_movies)
+            await self._load_cache()
+            movies =await asyncio.to_thread(self._scanner.get_movies)
             shows = await asyncio.to_thread(self._scanner.get_shows)
 
             set_progress(uid, stage="movies", movies_total=len(movies), shows_total=len(shows))
@@ -124,7 +146,43 @@ class ScanOrchestrator:
             logger.exception("Full scan failed for user %s", self.user.username)
             raise
         finally:
+            await self._save_cache()
             self._tmdb.close()
+
+    async def run_plex_rescan(self) -> None:
+        """Re-read Plex and update statuses from stored data. Makes no TMDb requests."""
+        run = ScanRun(user_id=self.user.id, scan_type="plex", started_at=_now())
+        self.db.add(run)
+        await self.db.commit()
+        await self.db.refresh(run)
+
+        uid = self.user.id
+        set_progress(uid, stage="plex", current_item="Lese Plex…")
+        try:
+            movies = await asyncio.to_thread(self._scanner.get_movies)
+            shows = await asyncio.to_thread(self._scanner.get_shows)
+
+            set_progress(uid, stage="audio", current_item="Status wird abgeglichen…")
+            stats = await apply_plex_state(self.db, uid, movies, shows)
+            missing_audio = find_missing_languages(
+                movies, shows, self._audio_langs(), self._subtitle_langs()
+            )
+            await self._save_audio(missing_audio)
+
+            run.status = "completed"
+            run.completed_at = _now()
+            await self.db.commit()
+            clear_progress(uid)
+            logger.info("Plex rescan done [%s]: %s", self.user.username, stats)
+        except Exception as exc:
+            await self.db.rollback()
+            run.status = "failed"
+            run.error = str(exc)
+            run.completed_at = _now()
+            await self.db.commit()
+            clear_progress(uid)
+            logger.exception("Plex rescan failed for user %s", self.user.username)
+            raise
 
     async def run_availability_check(self) -> None:
         run = ScanRun(user_id=self.user.id, scan_type="availability", started_at=_now())
@@ -149,6 +207,52 @@ class ScanOrchestrator:
             logger.exception("Availability check failed for user %s", self.user.username)
             raise
         finally:
+            self._tmdb.close()
+
+    async def refresh_show(self, tmdb_id: int, refresh_tmdb: bool = False) -> LibraryShow:
+        """Re-check a single show against Plex, without a full scan.
+
+        Plex is read for this show only and TMDb answers come from the cache, so a
+        typical refresh (new files were added) costs no TMDb requests. With
+        refresh_tmdb the cached TMDb data for the show is dropped first.
+        """
+        lib = (await self.db.execute(
+            select(LibraryShow).where(LibraryShow.user_id == self.user.id, LibraryShow.tmdb_id == tmdb_id)
+        )).scalar_one_or_none()
+        if lib is None or lib.plex_key is None:
+            raise LookupError(f"Show {tmdb_id} not in library")
+
+        await self._load_cache()
+        try:
+            if refresh_tmdb:
+                self._cache.invalidate_where(
+                    lambda k: k == f"show:{tmdb_id}" or k.startswith(f"season:{tmdb_id}:")
+                )
+            # fail before touching the DB if TMDb is unreachable
+            await asyncio.to_thread(self._tmdb.get_show, tmdb_id)
+
+            show = await asyncio.to_thread(self._scanner.get_show, lib.plex_key)
+            show["tmdb_id"] = tmdb_id  # the match from the last full scan
+            missing, entry = await asyncio.to_thread(check_show, show, self._tmdb)
+            audio = find_missing_languages([], [show], self._audio_langs(), self._subtitle_langs())
+
+            await self._save_episodes(missing, show_tmdb_id=tmdb_id)
+            await self._save_audio(audio, show_plex_key=lib.plex_key)
+            await self._check_episode_availability(
+                self.user.streaming_region or "DE", self._owned_services(), show_tmdb_id=tmdb_id
+            )
+
+            lib.poster_path = entry["poster_path"] or lib.poster_path
+            lib.episodes_total = entry["episodes_total"]
+            lib.episodes_present = entry["episodes_present"]
+            lib.missing_count = entry["missing_count"]
+            lib.status = entry["status"]
+            lib.last_updated = _now()
+            await self.db.commit()
+            logger.info("Refreshed show %r [%s]: %d missing", lib.title, self.user.username, len(missing))
+            return lib
+        finally:
+            await self._save_cache()
             self._tmdb.close()
 
     # ------------------------------------------------------------------
@@ -184,17 +288,20 @@ class ScanOrchestrator:
             ))
         await self.db.commit()
 
-    async def _save_episodes(self, items: list[dict]) -> None:
+    async def _save_episodes(self, items: list[dict], show_tmdb_id: int | None = None) -> None:
+        """Replace missing episodes, for one show if show_tmdb_id is given, else for all."""
+        scope = [MissingEpisode.user_id == self.user.id]
+        if show_tmdb_id is not None:
+            scope.append(MissingEpisode.show_tmdb_id == show_tmdb_id)
+
         # Preserve streaming data keyed by (show_tmdb_id, season, episode)
-        existing = await self.db.execute(
-            select(MissingEpisode).where(MissingEpisode.user_id == self.user.id)
-        )
+        existing = await self.db.execute(select(MissingEpisode).where(*scope))
         old: dict[tuple[int, int, int], MissingEpisode] = {
             (r.show_tmdb_id, r.season_number, r.episode_number): r
             for r in existing.scalars()
         }
 
-        await self.db.execute(delete(MissingEpisode).where(MissingEpisode.user_id == self.user.id))
+        await self.db.execute(delete(MissingEpisode).where(*scope))
         for ep in items:
             key = (ep["show_tmdb_id"], ep["season_number"], ep["episode_number"])
             prev = old.get(key)
@@ -218,12 +325,17 @@ class ScanOrchestrator:
             ))
         await self.db.commit()
 
-    async def _save_audio(self, items: list[dict]) -> None:
-        await self.db.execute(delete(MissingAudio).where(MissingAudio.user_id == self.user.id))
+    async def _save_audio(self, items: list[dict], show_plex_key: int | None = None) -> None:
+        """Replace audio findings, for the episodes of one show if show_plex_key is given."""
+        scope = [MissingAudio.user_id == self.user.id]
+        if show_plex_key is not None:
+            scope.append(MissingAudio.show_plex_key == show_plex_key)
+        await self.db.execute(delete(MissingAudio).where(*scope))
         for item in items:
             self.db.add(MissingAudio(
                 user_id=self.user.id,
                 plex_key=item["plex_key"],
+                show_plex_key=item.get("show_plex_key"),
                 title=item["title"],
                 media_type=item["media_type"],
                 missing_audio_langs=json.dumps(item["missing_audio"]),
@@ -329,13 +441,16 @@ class ScanOrchestrator:
                     await self._send_streamable_notification("movie", str(movie.tmdb_id), movie.title, owned_hits)
         await self.db.commit()
 
-    async def _check_episode_availability(self, region: str, owned: set[str]) -> None:
-        result = await self.db.execute(
-            select(MissingEpisode).where(
-                MissingEpisode.user_id == self.user.id,
-                MissingEpisode.status == "missing",
-            )
+    async def _check_episode_availability(
+        self, region: str, owned: set[str], show_tmdb_id: int | None = None
+    ) -> None:
+        q = select(MissingEpisode).where(
+            MissingEpisode.user_id == self.user.id,
+            MissingEpisode.status == "missing",
         )
+        if show_tmdb_id is not None:
+            q = q.where(MissingEpisode.show_tmdb_id == show_tmdb_id)
+        result = await self.db.execute(q)
         show_providers: dict[int, list[dict]] = {}
         for ep in result.scalars().all():
             if ep.show_tmdb_id not in show_providers:

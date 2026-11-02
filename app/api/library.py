@@ -41,21 +41,15 @@ async def library_movies(
     ]
 
 
-@router.get("/shows")
-async def library_shows(
-    status: str = "all",
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    q = select(LibraryShow).where(LibraryShow.user_id == user.id)
-    if status in ("complete", "incomplete"):
-        q = q.where(LibraryShow.status == status)
-    q = q.order_by(LibraryShow.title)
-    shows = (await db.execute(q)).scalars().all()
-
+async def show_items(
+    db: AsyncSession, user_id: int, shows: list[LibraryShow], status: str = "all"
+) -> list[dict]:
     # availability is tracked per episode; all episodes of a show share the same providers
     eps = (await db.execute(
-        select(MissingEpisode).where(MissingEpisode.user_id == user.id)
+        select(MissingEpisode).where(
+            MissingEpisode.user_id == user_id,
+            MissingEpisode.show_tmdb_id.in_([s.tmdb_id for s in shows]),
+        )
     )).scalars().all()
     by_show: dict[int, dict] = {}
     for ep in eps:
@@ -90,3 +84,17 @@ async def library_shows(
             "status": s.status,
         })
     return out
+
+
+@router.get("/shows")
+async def library_shows(
+    status: str = "all",
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    q = select(LibraryShow).where(LibraryShow.user_id == user.id)
+    if status in ("complete", "incomplete"):
+        q = q.where(LibraryShow.status == status)
+    q = q.order_by(LibraryShow.title)
+    shows = (await db.execute(q)).scalars().all()
+    return await show_items(db, user.id, shows, status)

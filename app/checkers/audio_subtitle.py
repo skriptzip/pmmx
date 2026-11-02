@@ -31,6 +31,7 @@ def find_missing_languages(
                 if missing_audio or missing_subs:
                     results.append({
                         "plex_key": ep["plex_key"],
+                        "show_plex_key": show.get("plex_key"),
                         "title": (
                             f"{show['title']} "
                             f"S{season['season_number']:02d}E{ep['episode_number']:02d}"

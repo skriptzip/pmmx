@@ -1,24 +1,27 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.api.library import show_items
 from app.config import get_settings
 from app.db.database import get_session_factory
 from app.db.models import ScanRun, User
 from app.scan.orchestrator import ScanOrchestrator
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 class ScanTriggerBody(BaseModel):
-    scan_type: Literal["full", "availability"] = "full"
+    scan_type: Literal["full", "availability", "plex"] = "full"
 
 
 async def _run_scan(user_id: int, scan_type: str) -> None:
@@ -30,6 +33,8 @@ async def _run_scan(user_id: int, scan_type: str) -> None:
         orc = ScanOrchestrator(user, settings, db)
         if scan_type == "availability":
             await orc.run_availability_check()
+        elif scan_type == "plex":
+            await orc.run_plex_rescan()
         else:
             await orc.run_full_scan()
 
@@ -42,6 +47,31 @@ async def trigger_scan(
 ):
     background_tasks.add_task(_run_scan, user.id, body.scan_type)
     return {"message": "Scan started", "scan_type": body.scan_type}
+
+
+@router.post("/show/{tmdb_id}")
+async def refresh_show(
+    tmdb_id: int,
+    refresh_tmdb: bool = False,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-check one show against Plex without running a full scan.
+
+    refresh_tmdb=true also drops the cached TMDb data of that show.
+    """
+    from app.scan.progress import get_progress
+    if get_progress(user.id):
+        raise HTTPException(status_code=409, detail="A scan is already running")
+
+    try:
+        lib = await ScanOrchestrator(user, get_settings(), db).refresh_show(tmdb_id, refresh_tmdb)
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Show not in library")
+    except Exception as exc:
+        logger.exception("Refresh of show %d failed for user %s", tmdb_id, user.username)
+        raise HTTPException(status_code=502, detail=f"Refresh failed: {exc}")
+    return (await show_items(db, user.id, [lib]))[0]
 
 
 @router.get("/progress")

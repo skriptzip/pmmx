@@ -55,6 +55,10 @@ class PlexScanner:
         logger.info("Shows found: %d", len(results))
         return results
 
+    def get_show(self, plex_key: int) -> dict:
+        """Read a single show, so one title can be refreshed without walking the whole library."""
+        return self._extract_show(self.server.fetchItem(plex_key))
+
     # ------------------------------------------------------------------
 
     def _extract_movie(self, movie: Movie) -> dict:
