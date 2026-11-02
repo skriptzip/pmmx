@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
-from pathlib import Path
 
-import yaml
 from pydantic import BaseModel, field_validator, model_validator
 
 
 class TMDbConfig(BaseModel):
-    api_key: str
+    api_key: str = ""
 
 
 class ScanConfig(BaseModel):
@@ -40,7 +38,7 @@ _INSECURE_SECRETS = {"change-me", "change-me-generate-a-random-32-char-string-in
 
 class Settings(BaseModel):
     secret_key: str = "change-me"
-    tmdb: TMDbConfig
+    tmdb: TMDbConfig = TMDbConfig()
     scan: ScanConfig = ScanConfig()
     database: DatabaseConfig = DatabaseConfig()
     auth: AuthConfig = AuthConfig()
@@ -50,16 +48,6 @@ class Settings(BaseModel):
         if self.secret_key in _INSECURE_SECRETS or len(self.secret_key) < 32:
             raise ValueError("SECRET_KEY muss gesetzt sein (mind. 32 Zeichen), z. B. via .env")
         return self
-
-
-def _deep_merge(base: dict, override: dict) -> dict:
-    result = base.copy()
-    for key, value in override.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = _deep_merge(result[key], value)
-        else:
-            result[key] = value
-    return result
 
 
 def _env_overrides() -> dict:
@@ -78,16 +66,10 @@ def _env_overrides() -> dict:
     return overrides
 
 
-def load_settings(config_path: str = "config.yaml") -> Settings:
-    path = Path(config_path)
-    if not path.exists():
-        raise FileNotFoundError(f"Config file not found: {config_path}")
-    with open(path) as f:
-        data = yaml.safe_load(f)
-    data = _deep_merge(data, _env_overrides())
-    return Settings(**data)
+def load_settings() -> Settings:
+    return Settings(**_env_overrides())
 
 
 @lru_cache(maxsize=1)
-def get_settings(config_path: str = "config.yaml") -> Settings:
-    return load_settings(config_path)
+def get_settings() -> Settings:
+    return load_settings()

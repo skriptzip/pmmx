@@ -95,17 +95,12 @@ Für Coolify liegt ein fertiges Preset in `docker-compose.coolify.yml`.
 
 ## Konfiguration
 
-Die Grundkonfiguration steht in `config.yaml`. Umgebungsvariablen überschreiben diese Werte, verschachtelte Keys werden mit doppeltem Unterstrich getrennt, z. B. `TMDB__API_KEY`.
+Die Konfiguration erfolgt über Umgebungsvariablen (Defaults in `app/config.py`), verschachtelte Keys werden mit doppeltem Unterstrich getrennt, z. B. `TMDB__API_KEY`.
 
-```yaml
-# secret_key kommt aus SECRET_KEY in der .env
-
-tmdb:
-  api_key: "dein-tmdb-key"
-
-scan:
-  full_scan_cron: "0 3 * * *"          # täglicher Voll-Scan
-  availability_check_cron: "0 2 * * *" # Verfügbarkeitsprüfung
+```bash
+TMDB__API_KEY=dein-tmdb-key
+SCAN__FULL_SCAN_CRON="0 3 * * *"           # täglicher Voll-Scan
+SCAN__AVAILABILITY_CHECK_CRON="0 2 * * *"  # Verfügbarkeitsprüfung
 ```
 
 Plex-Zugangsdaten gehören nicht in die Konfiguration. Jeder Nutzer meldet sich über den Plex-OAuth-Flow an. Sprachen, Streaming-Dienste, Region und Benachrichtigungen stellst du in der App unter **Einstellungen** ein.

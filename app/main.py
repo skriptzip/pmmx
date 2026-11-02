@@ -3,7 +3,7 @@
 Verwendung:
     uv run python -m app.main --token <PLEX_TOKEN> --server "Mein Server"
 
-Credentials kommen NICHT aus config.yaml — die gehören dem jeweiligen
+Credentials kommen NICHT aus der Konfiguration — die gehören dem jeweiligen
 Nutzer und werden über den OAuth-Login in der DB gespeichert.
 """
 from __future__ import annotations

@@ -24,8 +24,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./config.yaml:/app/config.yaml:ro
     environment:
       DATABASE__URL: postgresql+asyncpg://pmmx:${POSTGRES_PASSWORD}@db:5432/pmmx
     env_file:
