@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { getMissingEpisodes, getMissingMovies } from '../api/client'
 import type { Status } from '../api/types'
 import { EpisodeCard, MovieCard } from '../components/MediaCard'
+import { ProviderLegend } from '../components/ProviderLogos'
 
 type MediaTab = 'movies' | 'series'
 
@@ -11,7 +12,7 @@ const FILTERS: { label: string; value: Status | 'all' }[] = [
   { label: 'Alle', value: 'all' },
   { label: 'Fehlt', value: 'missing' },
   { label: 'Bald', value: 'upcoming' },
-  { label: 'Streambar', value: 'streamable' },
+  { label: 'Verfügbar', value: 'streamable' },
 ]
 
 export function Movies() {
@@ -80,6 +81,8 @@ export function Movies() {
           </button>
         ))}
       </div>
+
+      <ProviderLegend />
 
       {isLoading && <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 32 }}>Lädt…</div>}
 

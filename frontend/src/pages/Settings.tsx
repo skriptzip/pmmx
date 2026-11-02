@@ -134,7 +134,10 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
 
       {/* Streaming services */}
       <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: 12 }}>Eigene Streaming-Dienste</div>
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>Eigene Streaming-Dienste</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+          Gesucht wird immer bei allen Anbietern. Deine Auswahl bestimmt nur, wofür du benachrichtigt wirst.
+        </div>
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Region</div>
           <div style={{ display: 'flex', gap: 6 }}>

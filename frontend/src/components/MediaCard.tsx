@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
-import { Play } from 'lucide-react'
 import type { MissingEpisode, MissingMovie } from '../api/types'
+import { ProviderLogos } from './ProviderLogos'
 import { StatusBadge } from './StatusBadge'
 
 export function MovieCard({ movie }: { movie: MissingMovie }) {
@@ -20,13 +20,7 @@ export function MovieCard({ movie }: { movie: MissingMovie }) {
             {movie.collection_name}{movie.year ? ` · ${movie.year}` : ''}
             {movie.release_date ? ` · ${new Date(movie.release_date).toLocaleDateString('de-DE')}` : ''}
           </div>
-          {movie.streaming_services.length > 0 && (
-            <div style={{ marginTop: 6 }}>
-              {movie.streaming_services.map(s => (
-                <span key={s.provider_id} className="streaming-chip"><Play size={10} fill="currentColor" /> {s.name}</span>
-              ))}
-            </div>
-          )}
+          <ProviderLogos services={movie.streaming_services} />
         </div>
         <StatusBadge status={movie.status} />
       </div>
@@ -54,13 +48,7 @@ export function EpisodeCard({ episode }: { episode: MissingEpisode }) {
               {new Date(episode.air_date).toLocaleDateString('de-DE')}
             </div>
           )}
-          {episode.streaming_services.length > 0 && (
-            <div style={{ marginTop: 6 }}>
-              {episode.streaming_services.map(s => (
-                <span key={s.provider_id} className="streaming-chip"><Play size={10} fill="currentColor" /> {s.name}</span>
-              ))}
-            </div>
-          )}
+          <ProviderLogos services={episode.streaming_services} />
         </div>
         <StatusBadge status={episode.status} />
       </div>

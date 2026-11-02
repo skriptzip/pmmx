@@ -413,6 +413,28 @@ input[type="text"]:focus, select:focus {
 @keyframes spin { to { transform: rotate(360deg); } }
 .icon-spin { animation: spin 1s linear infinite; }
 
+.provider-logos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.provider-logo-chip {
+  width: 30px;
+  height: 30px;
+  padding: 2px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-decoration: none;
+  box-sizing: border-box;
+}
+.provider-logo-chip img { width: 100%; height: 100%; border-radius: 5px; object-fit: cover; display: block; }
+.provider-logo-chip.flatrate { background: rgba(74,222,128,.22); border-color: var(--success); }
+.provider-logo-chip.rent     { background: rgba(245,158,11,.22); border-color: var(--warning); }
+.provider-logo-chip.buy      { background: rgba(167,139,250,.22); border-color: var(--streamable); }
+.provider-legend { display: flex; gap: 6px; margin: 0 0 12px; }
+
 .streaming-chip {
   display: inline-flex;
   align-items: center;

@@ -3,7 +3,7 @@ import type { Status } from '../api/types'
 const LABELS: Record<Status, string> = {
   missing: 'Fehlt',
   upcoming: 'Bald',
-  streamable: 'Streambar',
+  streamable: 'Verfügbar',
 }
 
 export function StatusBadge({ status }: { status: Status }) {

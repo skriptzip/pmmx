@@ -120,7 +120,7 @@ export function Dashboard({ user }: { user: Me }) {
           { label: 'Fehlende Filme', value: movies.data?.filter(m => m.status !== 'upcoming').length ?? '–', accent: 'var(--danger)' },
           { label: 'Fehlende Episoden', value: episodes.data?.filter(e => e.status !== 'upcoming').length ?? '–', accent: 'var(--danger)' },
           { label: 'Bald verfügbar', value: (movies.data?.filter(m => m.status === 'upcoming').length ?? 0) + (episodes.data?.filter(e => e.status === 'upcoming').length ?? 0), accent: 'var(--warning)' },
-          { label: 'Streambar', value: streamable, accent: 'var(--streamable)' },
+          { label: 'Verfügbar', value: streamable, accent: 'var(--streamable)' },
         ].map(stat => (
           <motion.div
             key={stat.label}

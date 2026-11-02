@@ -16,7 +16,7 @@ const MOVIE_FILTERS: { label: string; value: MovieFilter }[] = [
   { label: 'Vorhanden', value: 'present' },
   { label: 'Fehlt', value: 'missing' },
   { label: 'Bald', value: 'upcoming' },
-  { label: 'Streambar', value: 'streamable' },
+  { label: 'Verfügbar', value: 'streamable' },
 ]
 
 const SHOW_FILTERS: { label: string; value: ShowFilter }[] = [
@@ -113,7 +113,7 @@ function MovieDetailPanel({ movie, onClose }: { movie: LibraryMovie; onClose: ()
               </div>
             )}
             <span className={`badge badge-${movie.status}`}>
-              {movie.status === 'missing' ? 'Fehlt' : movie.status === 'upcoming' ? 'Bald' : movie.status === 'streamable' ? 'Streambar' : 'Vorhanden'}
+              {movie.status === 'missing' ? 'Fehlt' : movie.status === 'upcoming' ? 'Bald' : movie.status === 'streamable' ? 'Verfügbar' : 'Vorhanden'}
             </span>
           </div>
           <button onClick={onClose}
