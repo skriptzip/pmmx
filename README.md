@@ -17,6 +17,8 @@ pmmx scannt deine Plex-Bibliothek und zeigt dir, was fehlt: unvollständige Film
 - **Status "Bald":** Noch nicht erschienene Titel werden getrennt von fehlenden geführt.
 - **Benachrichtigungen:** Per ntfy, Discord oder Pushover.
 - **Zeitplan:** Täglicher Voll-Scan und Verfügbarkeitsprüfung per Cron.
+- **Sparsam mit TMDb:** TMDb-Antworten werden zwischengespeichert (laufende Serien 1 Tag, nur die neueste Staffel; beendete Serien und erschienene Filme 30 Tage). Einzelne Serien lassen sich in der Bibliothek per „Aktualisieren“ neu aus Plex einlesen, ohne Voll-Scan.
+- **Plex neu einlesen:** Liest nur Plex neu ein und gleicht Filme und Serien lokal ab (neu hinzugekommen, entfernt, „Bald“ wird „Fehlt“), ganz ohne TMDb-Anfragen.
 - **Mehrere Nutzer:** Anmeldung über Plex OAuth, Einstellungen pro Nutzer.
 - **Web-App/PWA:** Responsive, mit Sidebar am Desktop und Bottom-Navigation am Smartphone. Native Apps sind per Capacitor vorbereitet.
 
@@ -141,7 +143,8 @@ uv run ruff check .
 | `GET /auth/me` | Aktueller Nutzer |
 | `GET /library/movies`, `GET /library/shows` | Bibliothek mit Status |
 | `GET /missing/movies`, `/missing/episodes`, `/missing/audio` | Fehlende Inhalte |
-| `POST /scan/trigger`, `GET /scan/progress`, `GET /scan/status` | Scans starten und beobachten |
+| `POST /scan/trigger` (`scan_type`: `full`, `availability`, `plex`), `GET /scan/progress`, `GET /scan/status` | Scans starten und beobachten |
+| `POST /scan/show/{tmdb_id}` | Eine Serie neu aus Plex prüfen (`?refresh_tmdb=true` verwirft auch den TMDb-Cache der Serie) |
 | `GET/PUT /settings` | Nutzereinstellungen |
 
 ## Status
