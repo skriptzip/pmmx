@@ -433,6 +433,21 @@ input[type="text"]:focus, select:focus {
 .provider-logo-chip.flatrate { background: rgba(74,222,128,.22); border-color: var(--success); }
 .provider-logo-chip.rent     { background: rgba(245,158,11,.22); border-color: var(--warning); }
 .provider-logo-chip.buy      { background: rgba(167,139,250,.22); border-color: var(--streamable); }
+.provider-logo-chip.small { width: 24px; height: 24px; padding: 1px; border-radius: 6px; border-width: 2px; }
+.provider-logo-chip.small img { border-radius: 4px; }
+.poster-logos {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none;
+}
+.poster-logos-more {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
 .provider-legend { display: flex; gap: 6px; margin: 0 0 12px; }
 
 .streaming-chip {

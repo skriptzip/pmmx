@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getLibraryMovies, getLibraryShows, getMissingEpisodes } from '../api/client'
 import type { LibraryMovie, LibraryShow, MissingEpisode, StreamingService } from '../api/types'
+import { PosterProviders } from '../components/ProviderLogos'
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w300'
 const TMDB_LOGO = 'https://image.tmdb.org/t/p/w45'
@@ -50,11 +51,12 @@ function PosterItem({ movie, onClick }: { movie: LibraryMovie; onClick: () => vo
         <div className="poster-placeholder">{movie.title}</div>
       )}
       {movie.status !== 'present' && <div className={`poster-overlay ${movie.status}`} />}
-      {movie.status !== 'present' && (
+      {(movie.status === 'missing' || movie.status === 'upcoming') && (
         <div className={`poster-badge ${movie.status}`}>
-          {movie.status === 'missing' ? 'Fehlt' : movie.status === 'upcoming' ? 'Bald' : 'Stream'}
+          {movie.status === 'missing' ? 'Fehlt' : 'Bald'}
         </div>
       )}
+      <PosterProviders services={movie.streaming_services} />
       <div className="poster-title-bar">
         {movie.title}{movie.year ? ` (${movie.year})` : ''}
       </div>

@@ -35,6 +35,25 @@ export function ProviderLogos({ services }: { services: StreamingService[] }) {
   )
 }
 
+const POSTER_MAX = 3
+
+export function PosterProviders({ services }: { services: StreamingService[] }) {
+  if (!services.length) return null
+  const sorted = [...services].sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type))
+  const shown = sorted.slice(0, POSTER_MAX)
+  const rest = sorted.length - shown.length
+  return (
+    <div className="poster-logos">
+      {shown.map(s => (
+        <span key={s.provider_id} className={`provider-logo-chip small ${s.type}`} title={`${s.name} (${TYPE_LABEL[s.type]})`}>
+          {s.logo_path ? <img src={`${TMDB_LOGO}${s.logo_path}`} alt={s.name} loading="lazy" /> : <span>{s.name.slice(0, 2)}</span>}
+        </span>
+      ))}
+      {rest > 0 && <span className="poster-logos-more">+{rest}</span>}
+    </div>
+  )
+}
+
 export function ProviderLegend() {
   return (
     <div className="provider-legend">
