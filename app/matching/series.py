@@ -24,13 +24,18 @@ def find_missing_episodes(
     missing: list[dict] = []
     show_library: list[dict] = []
     today = date.today()
-    total = len([s for s in plex_shows if s["tmdb_id"]])
+    total = len(plex_shows)
     checked = 0
 
     for show in plex_shows:
-        if not show["tmdb_id"]:
-            continue
         checked += 1
+        if not show["tmdb_id"]:
+            show["tmdb_id"] = tmdb.find_show_id(
+                show.get("tvdb_id"), show.get("imdb_id"), show["title"], show.get("year")
+            )
+            if not show["tmdb_id"]:
+                logger.warning("No TMDb match for show %r, skipping", show["title"])
+                continue
         if on_progress:
             on_progress(checked, total, show["title"])
 
