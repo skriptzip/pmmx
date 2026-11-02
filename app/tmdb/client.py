@@ -63,6 +63,31 @@ class TMDbClient:
     def get_show(self, tmdb_id: int) -> dict:
         return self._call(tmdb.TV(tmdb_id).info)
 
+    def find_show_id(
+        self, tvdb_id: int | None, imdb_id: str | None, title: str, year: int | None
+    ) -> int | None:
+        """Resolve a TMDb show id from external ids, falling back to a title search."""
+        for source, value in (("tvdb_id", tvdb_id), ("imdb_id", imdb_id)):
+            if not value:
+                continue
+            try:
+                found = self._call(tmdb.Find(value).info, external_source=source)
+            except Exception as exc:
+                logger.warning("TMDb find %s=%s failed: %s", source, value, exc)
+                continue
+            results = found.get("tv_results") or []
+            if results:
+                return results[0]["id"]
+        kwargs = {"query": title}
+        if year:
+            kwargs["first_air_date_year"] = year
+        try:
+            results = self._call(tmdb.Search().tv, **kwargs).get("results") or []
+        except Exception as exc:
+            logger.warning("TMDb search for show %r failed: %s", title, exc)
+            return None
+        return results[0]["id"] if results else None
+
     def get_season(self, tmdb_id: int, season_number: int) -> dict:
         return self._call(tmdb.TV_Seasons(tmdb_id, season_number).info)
 
