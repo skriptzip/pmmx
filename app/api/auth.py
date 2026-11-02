@@ -36,6 +36,11 @@ async def poll_plex_login(pin_id: int, db: AsyncSession = Depends(get_db)):
         return {"status": "pending"}
 
     user_info = await asyncio.to_thread(get_user_info, token)
+    settings = get_settings()
+    allowed = {u.lower() for u in settings.auth.allowed_users}
+    if allowed and not {user_info["username"].lower(), (user_info["email"] or "").lower()} & allowed:
+        raise HTTPException(status_code=403, detail="Dieser Plex-Nutzer ist nicht freigeschaltet")
+
     servers = await asyncio.to_thread(list_servers, token)
 
     # Upsert user
@@ -58,7 +63,6 @@ async def poll_plex_login(pin_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(user)
 
-    settings = get_settings()
     jwt = create_access_token(user.id, settings.secret_key)
     return {"status": "authorized", "jwt": jwt, "servers": servers}
 

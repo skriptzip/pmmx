@@ -5,7 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, model_validator
 
 
 class TMDbConfig(BaseModel):
@@ -21,11 +21,35 @@ class DatabaseConfig(BaseModel):
     url: str = "postgresql+asyncpg://pmmx:pmmx@db:5432/pmmx"
 
 
+class AuthConfig(BaseModel):
+    # Leer = jeder Plex-Nutzer darf sich anmelden. Für öffentliche Server setzen.
+    allowed_users: list[str] = []
+    # Zusätzliche Origins für CORS (die Web-App selbst läuft same-origin über /api).
+    cors_origins: list[str] = ["capacitor://localhost", "http://localhost", "https://localhost"]
+
+    @field_validator("allowed_users", "cors_origins", mode="before")
+    @classmethod
+    def _split_csv(cls, v):
+        if isinstance(v, str):
+            return [x.strip() for x in v.split(",") if x.strip()]
+        return v
+
+
+_INSECURE_SECRETS = {"change-me", "change-me-generate-a-random-32-char-string-in-production"}
+
+
 class Settings(BaseModel):
     secret_key: str = "change-me"
     tmdb: TMDbConfig
     scan: ScanConfig = ScanConfig()
     database: DatabaseConfig = DatabaseConfig()
+    auth: AuthConfig = AuthConfig()
+
+    @model_validator(mode="after")
+    def _check_secret(self):
+        if self.secret_key in _INSECURE_SECRETS or len(self.secret_key) < 32:
+            raise ValueError("SECRET_KEY muss gesetzt sein (mind. 32 Zeichen), z. B. via .env")
+        return self
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
@@ -42,6 +66,9 @@ def _env_overrides() -> dict:
     overrides: dict = {}
     for key, value in os.environ.items():
         parts = key.lower().split("__")
+        if key.lower() == "secret_key":
+            overrides["secret_key"] = value
+            continue
         if len(parts) < 2:
             continue
         node = overrides

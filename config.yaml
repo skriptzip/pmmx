@@ -1,7 +1,7 @@
-secret_key: "change-me-generate-a-random-32-char-string-in-production"
+# secret_key wird über SECRET_KEY (.env) gesetzt
 
 tmdb:
-  api_key: ""
+  api_key: ""  # via TMDB__API_KEY in .env
 
 scan:
   full_scan_cron: "0 3 * * *"

@@ -12,6 +12,7 @@ from app.api.library import router as library_router
 from app.api.missing import router as missing_router
 from app.api.scan import router as scan_router
 from app.api.settings_routes import router as settings_router
+from app.config import get_settings
 from app.db.database import get_session_factory, init_db
 from app.db.models import ScanRun
 from app.scheduler.jobs import shutdown_scheduler, start_scheduler
@@ -45,10 +46,9 @@ app = FastAPI(title="pmmx API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=get_settings().auth.cors_origins,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
