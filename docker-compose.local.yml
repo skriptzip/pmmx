@@ -1,0 +1,5 @@
+# Lokaler Betrieb ohne Traefik: docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+services:
+  frontend:
+    ports:
+      - "80:80"

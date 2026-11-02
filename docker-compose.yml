@@ -1,13 +1,14 @@
 services:
   db:
-    image: postgres:16-alpine
+    container_name: pmmx-db
+    image: postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: pmmx
       POSTGRES_USER: pmmx
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pmmx}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD in .env setzen}
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pmmx"]
       interval: 5s
@@ -15,6 +16,7 @@ services:
       retries: 10
 
   pmmx:
+    container_name: pmmx-backend
     build:
       context: .
       dockerfile: Dockerfile
@@ -25,30 +27,46 @@ services:
     volumes:
       - ./config.yaml:/app/config.yaml:ro
     environment:
-      DATABASE__URL: postgresql+asyncpg://pmmx:${POSTGRES_PASSWORD:-pmmx}@db:5432/pmmx
+      DATABASE__URL: postgresql+asyncpg://pmmx:${POSTGRES_PASSWORD}@db:5432/pmmx
     env_file:
       - path: .env
         required: false
 
   frontend:
+    container_name: pmmx-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
     restart: unless-stopped
-    ports:
-      - "80:80"
     depends_on:
       - pmmx
+    networks:
+      - default
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK:-traefik}
+      - traefik.http.routers.pmmx.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.pmmx.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.pmmx.tls=true
+      - traefik.http.routers.pmmx.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.services.pmmx.loadbalancer.server.port=80
 
   ntfy:
+    container_name: pmmx-ntfy
     image: binwiederhier/ntfy
     restart: unless-stopped
     command: serve
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     volumes:
       - ntfy_data:/var/lib/ntfy
 
 volumes:
   db_data:
   ntfy_data:
+
+networks:
+  traefik:
+    name: ${TRAEFIK_NETWORK:-traefik}
+    external: true
