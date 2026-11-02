@@ -216,8 +216,8 @@ function CollectionSection({ name, movies, onSelect }: {
   const missing = movies.filter(m => m.status !== 'present').length
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '20px 0 8px' }}>
-        <span className="section-header" style={{ margin: 0 }}>{name}</span>
+      <div className="collection-head">
+        <span className="section-header" style={{ margin: 0 }}>{name} ({movies.length})</span>
         {missing > 0 && <span className="badge badge-missing">{missing} fehlt</span>}
       </div>
       <div className="poster-grid">
@@ -362,8 +362,12 @@ export function Library() {
     return acc
   }, {})
 
-  const standalone   = movieGroups['—'] ?? []
-  const collections  = Object.entries(movieGroups).filter(([k]) => k !== '—')
+  // Kollektionen mit nur einem Film landen im gemeinsamen Raster, sonst gibt es viele Mini-Abschnitte
+  const collections = Object.entries(movieGroups).filter(([k, ms]) => k !== '—' && ms.length > 1)
+  const standalone = Object.entries(movieGroups)
+    .filter(([k, ms]) => k === '—' || ms.length <= 1)
+    .flatMap(([, ms]) => ms)
+    .sort((a, b) => a.title.localeCompare(b.title, 'de'))
 
   return (
     <div className="page">
@@ -385,7 +389,8 @@ export function Library() {
         </div>
       </div>
 
-      <div style={{ position: 'relative', marginBottom: 12 }}>
+      <div className="sticky-bar">
+      <div style={{ position: 'relative', marginBottom: 8 }}>
         <input type="text"
           placeholder={tab === 'movies' ? 'Film oder Kollektion suchen…' : 'Serie suchen…'}
           value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 36 }} />
@@ -400,17 +405,30 @@ export function Library() {
         )}
       </div>
 
+      {tab === 'movies' ? (
+        <div className="filter-row">
+          {MOVIE_FILTERS.map(f => (
+            <button key={f.value} className={`filter-chip${movieFilter === f.value ? ' active' : ''}`}
+              onClick={() => setMovieFilter(f.value)}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="filter-row">
+          {SHOW_FILTERS.map(f => (
+            <button key={f.value} className={`filter-chip${showFilter === f.value ? ' active' : ''}`}
+              onClick={() => setShowFilter(f.value)}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
+      </div>
+
       {/* Movies tab */}
       {tab === 'movies' && (
         <>
-          <div className="filter-row">
-            {MOVIE_FILTERS.map(f => (
-              <button key={f.value} className={`filter-chip${movieFilter === f.value ? ' active' : ''}`}
-                onClick={() => setMovieFilter(f.value)}>
-                {f.label}
-              </button>
-            ))}
-          </div>
 
           {moviesQ.isLoading && (
             <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 48 }}>Lädt…</div>
@@ -430,9 +448,11 @@ export function Library() {
 
           {standalone.length > 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="section-header" style={{ marginTop: collections.length ? 20 : 0 }}>
-                Einzelfilme ({standalone.length})
-              </div>
+              {collections.length > 0 && (
+                <div className="section-header" style={{ marginTop: 24 }}>
+                  Weitere Filme ({standalone.length})
+                </div>
+              )}
               <div className="poster-grid">
                 {standalone.map(m => <PosterItem key={m.id} movie={m} onClick={() => setSelectedMovie(m)} />)}
               </div>
@@ -444,15 +464,6 @@ export function Library() {
       {/* Shows tab */}
       {tab === 'shows' && (
         <>
-          <div className="filter-row">
-            {SHOW_FILTERS.map(f => (
-              <button key={f.value} className={`filter-chip${showFilter === f.value ? ' active' : ''}`}
-                onClick={() => setShowFilter(f.value)}>
-                {f.label}
-              </button>
-            ))}
-          </div>
-
           {showsQ.isLoading && (
             <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 48 }}>Lädt…</div>
           )}

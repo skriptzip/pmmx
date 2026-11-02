@@ -448,6 +448,22 @@ input[type="text"]:focus, select:focus {
   font-size: 10px;
   font-weight: 700;
   color: #fff;
+  background: rgba(0,0,0,.7);
+  border-radius: 6px;
+  padding: 1px 4px;
+  align-self: flex-start;
+}
+.sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
+  margin: 0 -16px 8px;
+  padding: 8px 16px 2px;
+  border-bottom: 1px solid var(--border);
+}
+.sticky-bar .filter-row { margin-bottom: 8px; }
+.collection-head { display: flex; align-items: center; gap: 8px; margin: 18px 0 8px; }
 .provider-legend { display: flex; gap: 6px; margin: 0 0 12px; }
 
 .streaming-chip {
@@ -555,6 +571,8 @@ input[type="text"]:focus, select:focus {
     padding: 24px;
     padding-bottom: 32px;
   }
+
+  .sticky-bar { margin: 0 -24px 8px; padding: 8px 24px 2px; }
 
   /* Grids */
   .stat-grid { grid-template-columns: repeat(4, 1fr); }
