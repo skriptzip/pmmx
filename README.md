@@ -83,6 +83,16 @@ Der Compose-Stack startet die Datenbank, das Backend, das Frontend (nginx) und e
 3. `AUTH__ALLOWED_USERS` mit den erlaubten Plex-Nutzern setzen, sonst kann sich jeder Plex-Nutzer anmelden.
 4. Nur das Frontend hängt über Labels an Traefik. Datenbank und Backend bleiben im internen Docker-Netz.
 
+### Hosting mit Coolify
+
+Für Coolify liegt ein fertiges Preset in `docker-compose.coolify.yml`.
+
+1. In Coolify eine neue Resource aus dem Git-Repository anlegen, Build Pack **Docker Compose**.
+2. Unter **Docker Compose Location** `/docker-compose.coolify.yml` eintragen.
+3. Beim Service `frontend` die Domain setzen. Coolify übernimmt Traefik, HTTPS und Zertifikat.
+4. In den Environment Variables `TMDB__API_KEY` und `AUTH__ALLOWED_USERS` setzen, optional `STREAMING__API_KEY`. Datenbankpasswort und `SECRET_KEY` generiert Coolify selbst.
+5. Deployen.
+
 ## Konfiguration
 
 Die Grundkonfiguration steht in `config.yaml`. Umgebungsvariablen überschreiben diese Werte, verschachtelte Keys werden mit doppeltem Unterstrich getrennt, z. B. `TMDB__API_KEY`.
