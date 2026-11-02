@@ -94,12 +94,18 @@ class ScanOrchestrator:
                 movies, shows, self._audio_langs(), self._subtitle_langs()
             )
 
-            set_progress(uid, stage="done", current_item="")
             await self._save_movies(missing_movies)
             await self._save_episodes(missing_eps)
             await self._save_audio(missing_audio)
             await self._save_library(library_movies, library_shows)
             await self._notify_new_releases(missing_movies, missing_eps)
+
+            set_progress(uid, stage="availability", current_item="Streaming-Verfügbarkeit wird geprüft…")
+            region = self.user.streaming_region or "DE"
+            owned = self._owned_services()
+            await self._check_movie_availability(region, owned)
+            await self._check_episode_availability(region, owned)
+            set_progress(uid, stage="done", current_item="")
 
             run.status = "completed"
             run.completed_at = _now()
@@ -161,8 +167,7 @@ class ScanOrchestrator:
             old_checked = prev.availability_checked_at if prev else None
             status = m["status"]
             if status == "missing" and old_svcs and old_svcs != "[]":
-                if any(s.get("type") == "flatrate" for s in json.loads(old_svcs)):
-                    status = "streamable"
+                status = "streamable"
             self.db.add(MissingMovie(
                 user_id=self.user.id,
                 tmdb_id=m["tmdb_id"],
@@ -197,8 +202,7 @@ class ScanOrchestrator:
             old_checked = prev.availability_checked_at if prev else None
             status = ep["status"]
             if status == "missing" and old_svcs and old_svcs != "[]":
-                if any(s.get("type") == "flatrate" for s in json.loads(old_svcs)):
-                    status = "streamable"
+                status = "streamable"
             self.db.add(MissingEpisode(
                 user_id=self.user.id,
                 show_tmdb_id=ep["show_tmdb_id"],
@@ -255,8 +259,7 @@ class ScanOrchestrator:
             old_svcs = prev.streaming_services if prev else "[]"
             status = m.get("status", "present")
             if status == "missing" and old_svcs and old_svcs != "[]":
-                if any(s.get("type") == "flatrate" for s in json.loads(old_svcs)):
-                    status = "streamable"
+                status = "streamable"
             self.db.add(LibraryMovie(
                 user_id=self.user.id,
                 tmdb_id=m["tmdb_id"],
@@ -310,8 +313,7 @@ class ScanOrchestrator:
             movie.availability_checked_at = _now()
             if all_providers:
                 movie.streaming_services = json.dumps(all_providers)
-                if flatrate:
-                    movie.status = "streamable"
+                movie.status = "streamable"
                 lib_result = await self.db.execute(
                     select(LibraryMovie).where(
                         LibraryMovie.user_id == self.user.id,
@@ -321,8 +323,7 @@ class ScanOrchestrator:
                 lib_movie = lib_result.scalar_one_or_none()
                 if lib_movie:
                     lib_movie.streaming_services = json.dumps(all_providers)
-                    if flatrate:
-                        lib_movie.status = "streamable"
+                    lib_movie.status = "streamable"
                 owned_hits = [p for p in flatrate if provider_matches_owned(p["name"], owned)]
                 if owned_hits:
                     await self._send_streamable_notification("movie", str(movie.tmdb_id), movie.title, owned_hits)
@@ -344,8 +345,7 @@ class ScanOrchestrator:
             ep.availability_checked_at = _now()
             if all_providers:
                 ep.streaming_services = json.dumps(all_providers)
-                if any(p.get("type") == "flatrate" for p in all_providers):
-                    ep.status = "streamable"
+                ep.status = "streamable"
         await self.db.commit()
 
     async def _notify_new_releases(self, movies: list[dict], episodes: list[dict]) -> None:
