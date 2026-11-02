@@ -64,25 +64,31 @@ frontend/           React-App
 ## Installation mit Docker
 
 Voraussetzungen: Docker mit Compose und ein [TMDb-API-Key](https://www.themoviedb.org/settings/api).
-
 1. Repository klonen.
-2. `.env.example` nach `.env` kopieren und mindestens `SECRET_KEY` und `TMDB__API_KEY` setzen. Für die Streaming-Prüfung kommt `STREAMING__API_KEY` (Watchmode) dazu.
+2. `.env.example` nach `.env` kopieren und `POSTGRES_PASSWORD`, `SECRET_KEY` (jeweils z. B. `openssl rand -hex 32`) und `TMDB__API_KEY` setzen. Für die Streaming-Prüfung kommt `STREAMING__API_KEY` (Watchmode) dazu. Lokal ohne Traefik: `DOMAIN=localhost` und mit `docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build` starten (vorher einmal `docker network create traefik`).
 3. Starten:
 
    ```bash
    docker compose up -d --build
    ```
 
-4. Die Web-App ist unter `http://localhost` erreichbar. Melde dich mit deinem Plex-Konto an und wähle deinen Server aus.
+4. Die Web-App ist unter `http://localhost` (bzw. deiner `DOMAIN`) erreichbar. Melde dich mit deinem Plex-Konto an und wähle deinen Server aus.
 
-Der Compose-Stack startet die Datenbank, das Backend, das Frontend (nginx) und einen eigenen ntfy-Server auf Port 8080.
+Der Compose-Stack startet die Datenbank, das Backend, das Frontend (nginx) und einen eigenen ntfy-Server (nur auf 127.0.0.1:8080).
+
+### Öffentlich hosten (Traefik)
+
+1. Traefik läuft bereits auf dem Server, mit einem externen Docker-Netzwerk (Standardname `traefik`) und einem Cert-Resolver.
+2. In `.env` `DOMAIN=pmmx.example.com` setzen, bei abweichenden Namen zusätzlich `TRAEFIK_NETWORK`, `TRAEFIK_ENTRYPOINT`, `TRAEFIK_CERTRESOLVER`.
+3. `AUTH__ALLOWED_USERS` mit den erlaubten Plex-Nutzern setzen, sonst kann sich jeder Plex-Nutzer anmelden.
+4. Nur das Frontend hängt über Labels an Traefik. Datenbank und Backend bleiben im internen Docker-Netz.
 
 ## Konfiguration
 
 Die Grundkonfiguration steht in `config.yaml`. Umgebungsvariablen überschreiben diese Werte, verschachtelte Keys werden mit doppeltem Unterstrich getrennt, z. B. `TMDB__API_KEY`.
 
 ```yaml
-secret_key: "zufälliger-string"
+# secret_key kommt aus SECRET_KEY in der .env
 
 tmdb:
   api_key: "dein-tmdb-key"
