@@ -103,16 +103,31 @@ class PlexScanner:
             "year": show.year,
             "tmdb_id": self._guid(show, "tmdb"),
             "tvdb_id": self._guid(show, "tvdb"),
+            "imdb_id": self._guid(show, "imdb"),
             "seasons": seasons,
         }
 
     @staticmethod
-    def _guid(item, source: str) -> int | None:
+    def _guid(item, source: str) -> int | str | None:
         prefix = f"{source}://"
         for guid in item.guids:
             if guid.id.startswith(prefix):
+                raw = guid.id[len(prefix):]
+                if source == "imdb":
+                    return raw
                 try:
-                    return int(guid.id[len(prefix):])
+                    return int(raw)
                 except ValueError:
                     return None
+        # legacy agents expose only item.guid, e.g. com.plexapp.agents.thetvdb://12345?lang=de
+        legacy = {"tmdb": "themoviedb", "tvdb": "thetvdb", "imdb": "imdb"}[source]
+        marker = f"com.plexapp.agents.{legacy}://"
+        if (item.guid or "").startswith(marker):
+            raw = item.guid[len(marker):].split("?", 1)[0]
+            if source == "imdb":
+                return raw
+            try:
+                return int(raw)
+            except ValueError:
+                return None
         return None
