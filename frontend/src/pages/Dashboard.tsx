@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { AlertTriangle, Check, Loader2, Search, X } from 'lucide-react'
+import { AlertTriangle, Check, HardDrive, Loader2, Search, X } from 'lucide-react'
 import { getMissingAudio, getMissingEpisodes, getMissingMovies, getScanProgress, getScanStatus, triggerScan } from '../api/client'
 import type { Me, ScanProgress } from '../api/types'
 
@@ -96,8 +97,16 @@ export function Dashboard({ user }: { user: Me }) {
     ...(episodes.data?.filter(e => e.status === 'streamable') ?? []),
   ].length
 
-  const handleScan = async () => {
-    await triggerScan('full')
+  // Nach Ende eines Scans alle Listen neu laden (Bibliothek, Fehlendes, Audio)
+  const queryClient = useQueryClient()
+  const wasScanning = useRef(false)
+  useEffect(() => {
+    if (wasScanning.current && !isScanning) queryClient.invalidateQueries()
+    wasScanning.current = isScanning
+  }, [isScanning, queryClient])
+
+  const handleScan = async (type: 'full' | 'plex') => {
+    await triggerScan(type)
     scans.refetch()
   }
 
@@ -146,12 +155,22 @@ export function Dashboard({ user }: { user: Me }) {
       <button
         className="btn btn-primary"
         style={{ width: '100%', justifyContent: 'center', marginBottom: 12 }}
-        onClick={handleScan}
+        onClick={() => handleScan('full')}
         disabled={isScanning}
       >
         {isScanning
           ? <><Loader2 size={15} className="icon-spin" /> Scan läuft…</>
           : <><Search size={15} /> Scan starten</>}
+      </button>
+
+      <button
+        className="btn btn-ghost"
+        style={{ width: '100%', justifyContent: 'center', marginBottom: 12 }}
+        onClick={() => handleScan('plex')}
+        disabled={isScanning}
+        title="Liest nur Plex neu ein und gleicht den Status lokal ab, ohne TMDb-Anfragen"
+      >
+        <HardDrive size={15} /> Plex neu einlesen
       </button>
 
       {isScanning && progress.data && (

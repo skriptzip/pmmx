@@ -63,8 +63,12 @@ export const getLibraryShows = (status = 'all') =>
   req<LibraryShow[]>(`/library/shows?status=${status}`)
 
 // Scan
-export const triggerScan = (scan_type: 'full' | 'availability' = 'full') =>
+export const triggerScan = (scan_type: 'full' | 'availability' | 'plex' = 'full') =>
   req('/scan/trigger', { method: 'POST', body: JSON.stringify({ scan_type }) })
+
+// Re-checks one show against Plex only; TMDb data comes from the cache unless refreshTmdb is set
+export const refreshShow = (tmdbId: number, refreshTmdb = false) =>
+  req<LibraryShow>(`/scan/show/${tmdbId}?refresh_tmdb=${refreshTmdb}`, { method: 'POST' })
 
 export const getScanStatus = () => req<ScanRun[]>('/scan/status')
 

@@ -48,7 +48,7 @@ export interface MissingAudio {
 
 export interface ScanRun {
   id: number
-  scan_type: 'full' | 'availability'
+  scan_type: 'full' | 'availability' | 'plex'
   started_at: string | null
   completed_at: string | null
   status: 'running' | 'completed' | 'failed'

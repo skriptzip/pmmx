@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Clapperboard, ExternalLink, Film, Search, Tv, X } from 'lucide-react'
+import { Clapperboard, ExternalLink, Film, RefreshCw, Search, Tv, X } from 'lucide-react'
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { getLibraryMovies, getLibraryShows, getMissingEpisodes } from '../api/client'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { getLibraryMovies, getLibraryShows, getMissingEpisodes, refreshShow } from '../api/client'
 import type { LibraryMovie, LibraryShow, MissingEpisode, StreamingService } from '../api/types'
 import { PosterProviders, ProviderLogos } from '../components/ProviderLogos'
 
@@ -237,9 +237,26 @@ function CollectionSection({ name, movies, onSelect }: {
 
 // ─── Show detail panel ────────────────────────────────────────────────────────
 
-function ShowDetailPanel({ show, onClose }: { show: LibraryShow; onClose: () => void }) {
+function ShowDetailPanel({ show, onClose, onUpdated }: {
+  show: LibraryShow
+  onClose: () => void
+  onUpdated: (show: LibraryShow) => void
+}) {
   const [imgErr, setImgErr] = useState(false)
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768
+  const queryClient = useQueryClient()
+
+  // Liest nur diese Serie neu aus Plex, ohne vollständigen Scan
+  const refresh = useMutation({
+    mutationFn: () => refreshShow(show.tmdb_id),
+    onSuccess: updated => {
+      onUpdated(updated)
+      queryClient.invalidateQueries({ queryKey: ['library-shows'] })
+      queryClient.invalidateQueries({ queryKey: ['show-missing-episodes', show.tmdb_id] })
+      queryClient.invalidateQueries({ queryKey: ['missing-episodes'] })
+      queryClient.invalidateQueries({ queryKey: ['missing-audio'] })
+    },
+  })
 
   const { data: episodes = [], isLoading } = useQuery({
     queryKey: ['show-missing-episodes', show.tmdb_id],
@@ -293,6 +310,18 @@ function ShowDetailPanel({ show, onClose }: { show: LibraryShow; onClose: () => 
               ? <span className="badge badge-missing">{show.missing_count} fehlend</span>
               : <span style={{ fontSize: 12, color: 'var(--success)', fontWeight: 600 }}>✓ Komplett</span>
             }
+            <div style={{ marginTop: 8 }}>
+              <button onClick={() => refresh.mutate()} disabled={refresh.isPending}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>
+                <RefreshCw size={13} className={refresh.isPending ? 'icon-spin' : undefined} />
+                {refresh.isPending ? 'Prüfe…' : 'Aktualisieren'}
+              </button>
+              {refresh.isError && (
+                <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>
+                  Aktualisierung fehlgeschlagen.
+                </div>
+              )}
+            </div>
           </div>
           <button onClick={onClose}
             style={{ background: 'none', border: 'none', color: 'var(--muted)', padding: '2px 0 0 8px', display: 'flex', alignSelf: 'flex-start' }}>
@@ -505,7 +534,7 @@ export function Library() {
       {/* Show detail panel */}
       <AnimatePresence>
         {selectedShow && (
-          <ShowDetailPanel show={selectedShow} onClose={() => setSelectedShow(null)} />
+          <ShowDetailPanel show={selectedShow} onClose={() => setSelectedShow(null)} onUpdated={setSelectedShow} />
         )}
       </AnimatePresence>
 
