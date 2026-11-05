@@ -5,14 +5,15 @@ import { getMissingEpisodes, getMissingMovies } from '../api/client'
 import type { Status } from '../api/types'
 import { EpisodeCard, MovieCard } from '../components/MediaCard'
 import { ProviderLegend } from '../components/ProviderLogos'
+import { t } from '../i18n'
 
 type MediaTab = 'movies' | 'series'
 
 const FILTERS: { label: string; value: Status | 'all' }[] = [
-  { label: 'Alle', value: 'all' },
-  { label: 'Fehlt', value: 'missing' },
-  { label: 'Bald', value: 'upcoming' },
-  { label: 'Verfügbar', value: 'streamable' },
+  { label: t('common.all'), value: 'all' },
+  { label: t('common.missing'), value: 'missing' },
+  { label: t('common.soon'), value: 'upcoming' },
+  { label: t('common.available'), value: 'streamable' },
 ]
 
 export function Movies() {
@@ -31,7 +32,7 @@ export function Movies() {
   })
 
   const groupedMovies = (moviesQ.data ?? []).reduce<Record<string, typeof moviesQ.data>>((acc, m) => {
-    const key = m.collection_name || 'Sonstige'
+    const key = m.collection_name || t('missing.other')
     acc[key] = [...(acc[key] ?? []), m]
     return acc
   }, {})
@@ -47,7 +48,7 @@ export function Movies() {
   return (
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 className="page-title" style={{ marginBottom: 0 }}>Fehlend</h1>
+        <h1 className="page-title" style={{ marginBottom: 0 }}>{t('missing.title')}</h1>
         <div style={{ display: 'flex', background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)', padding: 2, gap: 2 }}>
           {(['movies', 'series'] as const).map(t => (
             <button
@@ -84,12 +85,12 @@ export function Movies() {
 
       <ProviderLegend />
 
-      {isLoading && <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 32 }}>Lädt…</div>}
+      {isLoading && <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 32 }}>{t('common.loading')}</div>}
 
       {!isLoading && isEmpty && (
         <div className="empty-state">
           <div className="icon">{mediaTab === 'movies' ? <Clapperboard size={48} /> : <Tv size={48} />}</div>
-          <p>Nichts gefunden.</p>
+          <p>{t('missing.nothing')}</p>
         </div>
       )}
 

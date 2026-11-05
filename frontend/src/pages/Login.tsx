@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Clapperboard } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPlexPin, pollPlexPin, selectServer } from '../api/client'
+import { t } from '../i18n'
 
 type Stage = 'idle' | 'waiting' | 'server_select' | 'done'
 
@@ -38,7 +39,7 @@ export function Login({ onLogin }: { onLogin: (jwt: string) => void }) {
           if (res.status === 'expired') {
             clearInterval(pollRef.current!)
             setStage('idle')
-            setError('Anmeldelink abgelaufen. Bitte erneut versuchen.')
+            setError(t('login.errExpired'))
             return
           }
           if (res.status !== 'authorized') return
@@ -64,7 +65,7 @@ export function Login({ onLogin }: { onLogin: (jwt: string) => void }) {
       }, 2000)
     } catch {
       setStage('idle')
-      setError('PIN-Erstellung fehlgeschlagen. Bitte erneut versuchen.')
+      setError(t('login.errPin'))
     }
   }, [onLogin])
 
@@ -77,7 +78,7 @@ export function Login({ onLogin }: { onLogin: (jwt: string) => void }) {
       await selectServer(server.name, server.client_identifier ?? '')
       onLogin(pendingJwt)
     } catch {
-      setError('Server-Auswahl fehlgeschlagen. Bitte erneut versuchen.')
+      setError(t('login.errServer'))
     }
   }
 
@@ -106,7 +107,7 @@ export function Login({ onLogin }: { onLogin: (jwt: string) => void }) {
         <div style={{ marginBottom: 12, color: 'var(--accent)' }}><Clapperboard size={48} /></div>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>pmmx</h1>
         <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 28 }}>
-          Plex Missing-Media-Scanner
+          {t('login.subtitle')}
         </p>
 
         <AnimatePresence mode="wait">
@@ -117,7 +118,7 @@ export function Login({ onLogin }: { onLogin: (jwt: string) => void }) {
                 style={{ width: '100%', justifyContent: 'center' }}
                 onClick={startLogin}
               >
-                Mit Plex anmelden
+                {t('login.button')}
               </button>
             </motion.div>
           )}
@@ -127,8 +128,8 @@ export function Login({ onLogin }: { onLogin: (jwt: string) => void }) {
               {authUrl ? (
                 <>
                   <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.6 }}>
-                    Klicke den Button um dich bei Plex anzumelden.<br />
-                    Diese Seite wartet automatisch auf Bestätigung.
+                    {t('login.hint')}<br />
+                    {t('login.hint2')}
                   </p>
                   {/* Link statt window.open — vermeidet Popup-Blocker */}
                   <a
@@ -138,7 +139,7 @@ export function Login({ onLogin }: { onLogin: (jwt: string) => void }) {
                     className="btn btn-primary"
                     style={{ display: 'flex', width: '100%', justifyContent: 'center', marginBottom: 20 }}
                   >
-                    Zur Plex-Anmeldeseite →
+                    {t('login.link')}
                   </a>
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 20 }}>
                     {[0, 1, 2].map(i => (
@@ -150,24 +151,24 @@ export function Login({ onLogin }: { onLogin: (jwt: string) => void }) {
                       />
                     ))}
                   </div>
-                  <p style={{ fontSize: 12, color: 'var(--muted)' }}>Warte auf Login…</p>
+                  <p style={{ fontSize: 12, color: 'var(--muted)' }}>{t('login.waiting')}</p>
                 </>
               ) : (
-                <p style={{ color: 'var(--muted)', fontSize: 14 }}>PIN wird erstellt…</p>
+                <p style={{ color: 'var(--muted)', fontSize: 14 }}>{t('login.creatingPin')}</p>
               )}
               <button
                 className="btn btn-ghost"
                 style={{ marginTop: 16, width: '100%', justifyContent: 'center', fontSize: 13 }}
                 onClick={() => { clearInterval(pollRef.current!); setStage('idle') }}
               >
-                Abbrechen
+                {t('login.cancel')}
               </button>
             </motion.div>
           )}
 
           {stage === 'server_select' && (
             <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <p style={{ marginBottom: 14, color: 'var(--muted)', fontSize: 14 }}>Server auswählen:</p>
+              <p style={{ marginBottom: 14, color: 'var(--muted)', fontSize: 14 }}>{t('login.selectServer')}</p>
               {servers.map(s => (
                 <button
                   key={s.name}
@@ -176,7 +177,7 @@ export function Login({ onLogin }: { onLogin: (jwt: string) => void }) {
                   onClick={() => handleServerSelect(s)}
                 >
                   <span>{s.name}</span>
-                  {s.owned && <span style={{ fontSize: 11, color: 'var(--success)' }}>Eigener</span>}
+                  {s.owned && <span style={{ fontSize: 11, color: 'var(--success)' }}>{t('login.owned')}</span>}
                 </button>
               ))}
             </motion.div>

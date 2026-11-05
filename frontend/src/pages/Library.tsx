@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getLibraryMovies, getLibraryShows, getMissingEpisodes, refreshShow } from '../api/client'
 import type { LibraryMovie, LibraryShow, MissingEpisode, StreamingService } from '../api/types'
-import { PosterProviders, ProviderLogos } from '../components/ProviderLogos'
+import { PosterProviders, ProviderLogos, TYPE_LABEL } from '../components/ProviderLogos'
+import { locale, t } from '../i18n'
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w300'
 const TMDB_LOGO = 'https://image.tmdb.org/t/p/w45'
@@ -13,30 +14,22 @@ type MovieFilter = 'all' | 'present' | 'missing' | 'upcoming' | 'streamable'
 type ShowFilter  = 'all' | 'complete' | 'incomplete' | 'upcoming' | 'streamable'
 
 const MOVIE_FILTERS: { label: string; value: MovieFilter }[] = [
-  { label: 'Alles', value: 'all' },
-  { label: 'Vorhanden', value: 'present' },
-  { label: 'Fehlt', value: 'missing' },
-  { label: 'Bald', value: 'upcoming' },
-  { label: 'Verfügbar', value: 'streamable' },
+  { label: t('common.everything'), value: 'all' },
+  { label: t('common.present'), value: 'present' },
+  { label: t('common.missing'), value: 'missing' },
+  { label: t('common.soon'), value: 'upcoming' },
+  { label: t('common.available'), value: 'streamable' },
 ]
 
 const SHOW_FILTERS: { label: string; value: ShowFilter }[] = [
-  { label: 'Alles', value: 'all' },
-  { label: 'Komplett', value: 'complete' },
-  { label: 'Unvollständig', value: 'incomplete' },
-  { label: 'Bald', value: 'upcoming' },
-  { label: 'Verfügbar', value: 'streamable' },
+  { label: t('common.everything'), value: 'all' },
+  { label: t('lib.complete'), value: 'complete' },
+  { label: t('lib.incomplete'), value: 'incomplete' },
+  { label: t('common.soon'), value: 'upcoming' },
+  { label: t('common.available'), value: 'streamable' },
 ]
 
 const pad = (n: number) => String(n).padStart(2, '0')
-
-// ─── Provider type helpers ───────────────────────────────────────────────────
-
-const TYPE_LABEL: Record<StreamingService['type'], string> = {
-  flatrate: 'Abo',
-  rent: 'Leihen',
-  buy: 'Kaufen',
-}
 
 // ─── Movie poster ────────────────────────────────────────────────────────────
 
@@ -55,7 +48,7 @@ function PosterItem({ movie, onClick }: { movie: LibraryMovie; onClick: () => vo
       {movie.status !== 'present' && <div className={`poster-overlay ${movie.status}`} />}
       {(movie.status === 'missing' || movie.status === 'upcoming') && (
         <div className={`poster-badge ${movie.status}`}>
-          {movie.status === 'missing' ? 'Fehlt' : 'Bald'}
+          {movie.status === 'missing' ? t('common.missing') : t('common.soon')}
         </div>
       )}
       <PosterProviders services={movie.streaming_services} />
@@ -117,7 +110,7 @@ function MovieDetailPanel({ movie, onClose }: { movie: LibraryMovie; onClose: ()
               </div>
             )}
             <span className={`badge badge-${movie.status}`}>
-              {movie.status === 'missing' ? 'Fehlt' : movie.status === 'upcoming' ? 'Bald' : movie.status === 'streamable' ? 'Verfügbar' : 'Vorhanden'}
+              {movie.status === 'missing' ? t('common.missing') : movie.status === 'upcoming' ? t('common.soon') : movie.status === 'streamable' ? t('common.available') : t('common.present')}
             </span>
           </div>
           <button onClick={onClose}
@@ -130,7 +123,7 @@ function MovieDetailPanel({ movie, onClose }: { movie: LibraryMovie; onClose: ()
         <div style={{ padding: '0 16px 8px' }}>
           {movie.streaming_services.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted)', fontSize: 14 }}>
-              Keine Streaming-Angebote verfügbar.
+              {t('lib.noStreaming')}
             </div>
           ) : (
             typeOrder.map(type => {
@@ -196,8 +189,8 @@ function ShowPosterItem({ show, onClick }: { show: LibraryShow; onClick: () => v
         {show.status === 'incomplete' && <div className={`poster-overlay ${overlay}`} />}
         {(pureMissing > 0 || show.upcoming_count > 0) && (
           <div className="poster-badges">
-            {pureMissing > 0 && <div className="poster-badge missing">{pureMissing} fehlt</div>}
-            {show.upcoming_count > 0 && <div className="poster-badge upcoming">{show.upcoming_count} bald</div>}
+            {pureMissing > 0 && <div className="poster-badge missing">{t('lib.nMissing', { n: pureMissing })}</div>}
+            {show.upcoming_count > 0 && <div className="poster-badge upcoming">{t('lib.nSoon', { n: show.upcoming_count })}</div>}
           </div>
         )}
         <PosterProviders services={show.streaming_services} />
@@ -226,7 +219,7 @@ function CollectionSection({ name, movies, onSelect }: {
     <div>
       <div className="collection-head">
         <span className="section-header" style={{ margin: 0 }}>{name} ({movies.length})</span>
-        {missing > 0 && <span className="badge badge-missing">{missing} fehlt</span>}
+        {missing > 0 && <span className="badge badge-missing">{t('lib.nMissing', { n: missing })}</span>}
       </div>
       <div className="poster-grid">
         {movies.map(m => <PosterItem key={m.id} movie={m} onClick={() => onSelect(m)} />)}
@@ -304,21 +297,21 @@ function ShowDetailPanel({ show, onClose, onUpdated }: {
               {show.title}{show.year ? ` (${show.year})` : ''}
             </div>
             <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>
-              {show.episodes_present} / {show.episodes_total} Episoden vorhanden
+              {t('lib.episodesPresent', { a: show.episodes_present, b: show.episodes_total })}
             </div>
             {show.missing_count > 0
-              ? <span className="badge badge-missing">{show.missing_count} fehlend</span>
-              : <span style={{ fontSize: 12, color: 'var(--success)', fontWeight: 600 }}>✓ Komplett</span>
+              ? <span className="badge badge-missing">{t('lib.nMissingPl', { n: show.missing_count })}</span>
+              : <span style={{ fontSize: 12, color: 'var(--success)', fontWeight: 600 }}>{t('lib.completeCheck')}</span>
             }
             <div style={{ marginTop: 8 }}>
               <button onClick={() => refresh.mutate()} disabled={refresh.isPending}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>
                 <RefreshCw size={13} className={refresh.isPending ? 'icon-spin' : undefined} />
-                {refresh.isPending ? 'Prüfe…' : 'Aktualisieren'}
+                {refresh.isPending ? t('lib.checking') : t('lib.refresh')}
               </button>
               {refresh.isError && (
                 <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>
-                  Aktualisierung fehlgeschlagen.
+                  {t('lib.refreshFailed')}
                 </div>
               )}
             </div>
@@ -332,7 +325,7 @@ function ShowDetailPanel({ show, onClose, onUpdated }: {
         {show.streaming_services.length > 0 && (
           <div style={{ padding: '0 16px 8px' }}>
             <div className="season-header">
-              Verfügbar bei{show.streamable_count > 0 ? ` (${show.streamable_count} Episoden)` : ''}
+              {t('lib.availableAt')}{show.streamable_count > 0 ? t('lib.nEpisodes', { n: show.streamable_count }) : ''}
             </div>
             <ProviderLogos services={show.streaming_services} />
           </div>
@@ -341,18 +334,18 @@ function ShowDetailPanel({ show, onClose, onUpdated }: {
         {/* Season / episode list */}
         <div style={{ padding: '0 16px' }}>
           {isLoading && (
-            <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 24 }}>Lädt…</div>
+            <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 24 }}>{t('common.loading')}</div>
           )}
 
           {!isLoading && episodes.length === 0 && (
             <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted)', fontSize: 14 }}>
-              Keine fehlenden Episoden — Serie ist vollständig vorhanden.
+              {t('lib.noMissingEpisodes')}
             </div>
           )}
 
           {sortedSeasons.map(([season, eps]) => (
             <div key={season} style={{ marginBottom: 8 }}>
-              <div className="season-header">Staffel {season}</div>
+              <div className="season-header">{t('lib.season', { n: season })}</div>
               {[...eps]
                 .sort((a, b) => a.episode_number - b.episode_number)
                 .map(ep => (
@@ -360,7 +353,7 @@ function ShowDetailPanel({ show, onClose, onUpdated }: {
                     <span className="ep-code">S{pad(ep.season_number)}E{pad(ep.episode_number)}</span>
                     <span className="ep-title">{ep.episode_title || '–'}</span>
                     <span className={`badge badge-${ep.status}`} style={{ flexShrink: 0 }}>
-                      {ep.status === 'missing' ? 'Fehlt' : ep.status === 'upcoming' ? 'Bald' : 'Verfügbar'}
+                      {ep.status === 'missing' ? t('common.missing') : ep.status === 'upcoming' ? t('common.soon') : t('common.available')}
                     </span>
                   </div>
                 ))}
@@ -413,23 +406,23 @@ export function Library() {
   const standalone = Object.entries(movieGroups)
     .filter(([k, ms]) => k === '—' || ms.length <= 1)
     .flatMap(([, ms]) => ms)
-    .sort((a, b) => a.title.localeCompare(b.title, 'de'))
+    .sort((a, b) => a.title.localeCompare(b.title, locale))
 
   return (
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 className="page-title" style={{ marginBottom: 0 }}>Bibliothek</h1>
+        <h1 className="page-title" style={{ marginBottom: 0 }}>{t('lib.title')}</h1>
         <div style={{ display: 'flex', background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)', padding: 2, gap: 2 }}>
-          {(['movies', 'shows'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{
+          {(['movies', 'shows'] as const).map(tabId => (
+            <button key={tabId} onClick={() => setTab(tabId)} style={{
               padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600,
-              background: tab === t ? 'var(--accent)' : 'transparent',
-              color: tab === t ? '#000' : 'var(--muted)',
+              background: tab === tabId ? 'var(--accent)' : 'transparent',
+              color: tab === tabId ? '#000' : 'var(--muted)',
               transition: 'all .15s',
             }}>
-              {t === 'movies'
-            ? <><Film size={14} style={{ flexShrink: 0 }} /> Filme</>
-            : <><Tv size={14} style={{ flexShrink: 0 }} /> Serien</>}
+              {tabId === 'movies'
+            ? <><Film size={14} style={{ flexShrink: 0 }} /> {t('common.movies')}</>
+            : <><Tv size={14} style={{ flexShrink: 0 }} /> {t('common.series')}</>}
             </button>
           ))}
         </div>
@@ -438,7 +431,7 @@ export function Library() {
       <div className="sticky-bar">
       <div style={{ position: 'relative', marginBottom: 8 }}>
         <input type="text"
-          placeholder={tab === 'movies' ? 'Film oder Kollektion suchen…' : 'Serie suchen…'}
+          placeholder={tab === 'movies' ? t('lib.searchMovie') : t('lib.searchShow')}
           value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 36 }} />
         <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none', display: 'flex' }}>
           <Search size={15} />
@@ -477,12 +470,12 @@ export function Library() {
         <>
 
           {moviesQ.isLoading && (
-            <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 48 }}>Lädt…</div>
+            <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 48 }}>{t('common.loading')}</div>
           )}
           {!moviesQ.isLoading && filteredMovies.length === 0 && (
             <div className="empty-state">
               <div className="icon"><Clapperboard size={48} /></div>
-              <p>Noch keine Filmbibliothek vorhanden.<br />Starte einen Scan um die Bibliothek zu laden.</p>
+              <p>{t('lib.noMovies1')}<br />{t('lib.scanHint')}</p>
             </div>
           )}
 
@@ -496,7 +489,7 @@ export function Library() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {collections.length > 0 && (
                 <div className="section-header" style={{ marginTop: 24 }}>
-                  Weitere Filme ({standalone.length})
+                  {t('lib.moreMovies', { n: standalone.length })}
                 </div>
               )}
               <div className="poster-grid">
@@ -511,12 +504,12 @@ export function Library() {
       {tab === 'shows' && (
         <>
           {showsQ.isLoading && (
-            <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 48 }}>Lädt…</div>
+            <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 48 }}>{t('common.loading')}</div>
           )}
           {!showsQ.isLoading && filteredShows.length === 0 && (
             <div className="empty-state">
               <div className="icon"><Tv size={48} /></div>
-              <p>Noch keine Serien vorhanden.<br />Starte einen Scan um die Bibliothek zu laden.</p>
+              <p>{t('lib.noShows1')}<br />{t('lib.scanHint')}</p>
             </div>
           )}
           {!showsQ.isLoading && filteredShows.length > 0 && (

@@ -2,20 +2,21 @@ import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Clapperboard, Headphones, Tv } from 'lucide-react'
 import { getMissingAudio } from '../api/client'
+import { t } from '../i18n'
 
 export function Audio() {
   const { data, isLoading } = useQuery({ queryKey: ['missing-audio'], queryFn: getMissingAudio })
 
   return (
     <div className="page">
-      <h1 className="page-title">Fehlende Sprachspuren</h1>
+      <h1 className="page-title">{t('audio.title')}</h1>
 
-      {isLoading && <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 32 }}>Lädt…</div>}
+      {isLoading && <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 32 }}>{t('common.loading')}</div>}
 
       {!isLoading && !data?.length && (
         <div className="empty-state">
           <div className="icon"><Headphones size={48} /></div>
-          <p>Alle konfigurierten Sprachen sind vorhanden.</p>
+          <p>{t('audio.allPresent')}</p>
         </div>
       )}
 
@@ -29,7 +30,7 @@ export function Audio() {
           <div style={{ fontWeight: 600, marginBottom: 6 }}>{item.title}</div>
           {item.missing_audio.length > 0 && (
             <div style={{ marginBottom: 4 }}>
-              <span style={{ fontSize: 11, color: 'var(--muted)', marginRight: 8 }}>Audio fehlt:</span>
+              <span style={{ fontSize: 11, color: 'var(--muted)', marginRight: 8 }}>{t('audio.audioMissing')}</span>
               {item.missing_audio.map(l => (
                 <span key={l} className="lang-tag missing">{l}</span>
               ))}
@@ -37,7 +38,7 @@ export function Audio() {
           )}
           {item.missing_subtitles.length > 0 && (
             <div>
-              <span style={{ fontSize: 11, color: 'var(--muted)', marginRight: 8 }}>Untertitel fehlt:</span>
+              <span style={{ fontSize: 11, color: 'var(--muted)', marginRight: 8 }}>{t('audio.subsMissing')}</span>
               {item.missing_subtitles.map(l => (
                 <span key={l} className="lang-tag missing">{l}</span>
               ))}
@@ -49,7 +50,7 @@ export function Audio() {
             </span>
             {item.plex_link ? (
               <a href={item.plex_link} target="_blank" rel="noreferrer" className="streaming-chip" style={{ fontSize: 11 }}>
-                In Plex öffnen
+                {t('audio.openPlex')}
               </a>
             ) : null}
           </div>

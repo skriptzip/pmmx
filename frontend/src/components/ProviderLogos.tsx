@@ -1,11 +1,12 @@
 import type { StreamingService } from '../api/types'
+import { t } from '../i18n'
 
 const TMDB_LOGO = 'https://image.tmdb.org/t/p/w92'
 
 export const TYPE_LABEL: Record<StreamingService['type'], string> = {
-  flatrate: 'Abo',
-  rent: 'Leihen',
-  buy: 'Kaufen',
+  flatrate: t('type.flatrate'),
+  rent: t('type.rent'),
+  buy: t('type.buy'),
 }
 
 const TYPE_ORDER: StreamingService['type'][] = ['flatrate', 'rent', 'buy']

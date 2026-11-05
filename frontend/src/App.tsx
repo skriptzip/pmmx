@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Clapperboard, Film, Headphones, LayoutDashboard, Settings } from 'lucide-react'
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
+import { t } from './i18n'
 import { Audio } from './pages/Audio'
 import { Dashboard } from './pages/Dashboard'
 import { Library } from './pages/Library'
@@ -10,10 +11,10 @@ import { Settings as SettingsPage } from './pages/Settings'
 import type { Me } from './api/types'
 
 const NAV = [
-  { to: '/',         label: 'Start',        Icon: LayoutDashboard },
-  { to: '/library',  label: 'Bibliothek',   Icon: Film            },
-  { to: '/audio',    label: 'Audio',        Icon: Headphones      },
-  { to: '/settings', label: 'Einstellungen', Icon: Settings       },
+  { to: '/',         label: t('nav.home'),     Icon: LayoutDashboard },
+  { to: '/library',  label: t('nav.library'),  Icon: Film            },
+  { to: '/audio',    label: t('nav.audio'),    Icon: Headphones      },
+  { to: '/settings', label: t('nav.settings'), Icon: Settings        },
 ]
 
 function SideNav({ user }: { user: Me | null }) {

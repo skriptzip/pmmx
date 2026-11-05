@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import type { MissingEpisode, MissingMovie } from '../api/types'
+import { dateLocale } from '../i18n'
 import { ProviderLogos } from './ProviderLogos'
 import { StatusBadge } from './StatusBadge'
 
@@ -18,7 +19,7 @@ export function MovieCard({ movie }: { movie: MissingMovie }) {
           </div>
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>
             {movie.collection_name}{movie.year ? ` · ${movie.year}` : ''}
-            {movie.release_date ? ` · ${new Date(movie.release_date).toLocaleDateString('de-DE')}` : ''}
+            {movie.release_date ? ` · ${new Date(movie.release_date).toLocaleDateString(dateLocale)}` : ''}
           </div>
           <ProviderLogos services={movie.streaming_services} />
         </div>
@@ -45,7 +46,7 @@ export function EpisodeCard({ episode }: { episode: MissingEpisode }) {
           </div>
           {episode.air_date && (
             <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-              {new Date(episode.air_date).toLocaleDateString('de-DE')}
+              {new Date(episode.air_date).toLocaleDateString(dateLocale)}
             </div>
           )}
           <ProviderLogos services={episode.streaming_services} />

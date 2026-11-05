@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { AlertTriangle, Check, HardDrive, Loader2, Search, X } from 'lucide-react'
 import { getMissingAudio, getMissingEpisodes, getMissingMovies, getScanProgress, getScanStatus, triggerScan } from '../api/client'
 import type { Me, ScanProgress } from '../api/types'
+import { dateLocale, t } from '../i18n'
 
 function ProgressBar({ value, total }: { value: number; total: number }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0
@@ -21,13 +22,13 @@ function ProgressBar({ value, total }: { value: number; total: number }) {
 
 function stageName(stage: ScanProgress['stage']) {
   const map: Record<ScanProgress['stage'], string> = {
-    starting: 'Wird gestartet…',
-    plex: 'Plex-Bibliothek wird geladen…',
-    movies: 'Filme werden geprüft',
-    series: 'Serien werden geprüft',
-    audio: 'Sprachspuren werden geprüft…',
-    availability: 'Streaming-Verfügbarkeit…',
-    done: 'Abgeschlossen',
+    starting: t('dash.stage.starting'),
+    plex: t('dash.stage.plex'),
+    movies: t('dash.stage.movies'),
+    series: t('dash.stage.series'),
+    audio: t('dash.stage.audio'),
+    availability: t('dash.stage.availability'),
+    done: t('dash.stage.done'),
   }
   return map[stage] ?? stage
 }
@@ -50,7 +51,7 @@ function ScanProgressCard({ progress }: { progress: ScanProgress }) {
       {showMovies && (
         <div style={{ marginBottom: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
-            <span>Filme</span>
+            <span>{t('common.movies')}</span>
             <span>{progress.movies_checked} / {progress.movies_total}</span>
           </div>
           <ProgressBar value={progress.movies_checked} total={progress.movies_total} />
@@ -60,7 +61,7 @@ function ScanProgressCard({ progress }: { progress: ScanProgress }) {
       {showShows && (
         <div style={{ marginBottom: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
-            <span>Serien</span>
+            <span>{t('common.series')}</span>
             <span>{progress.shows_checked} / {progress.shows_total}</span>
           </div>
           <ProgressBar value={progress.shows_checked} total={progress.shows_total} />
@@ -114,7 +115,7 @@ export function Dashboard({ user }: { user: Me }) {
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700 }}>Übersicht</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700 }}>{t('dash.title')}</h1>
           {user.server_name && (
             <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{user.server_name}</div>
           )}
@@ -126,10 +127,10 @@ export function Dashboard({ user }: { user: Me }) {
 
       <div className="stat-grid">
         {[
-          { label: 'Fehlende Filme', value: movies.data?.filter(m => m.status !== 'upcoming').length ?? '–', accent: 'var(--danger)' },
-          { label: 'Fehlende Episoden', value: episodes.data?.filter(e => e.status !== 'upcoming').length ?? '–', accent: 'var(--danger)' },
-          { label: 'Bald verfügbar', value: (movies.data?.filter(m => m.status === 'upcoming').length ?? 0) + (episodes.data?.filter(e => e.status === 'upcoming').length ?? 0), accent: 'var(--warning)' },
-          { label: 'Verfügbar', value: streamable, accent: 'var(--streamable)' },
+          { label: t('dash.missingMovies'), value: movies.data?.filter(m => m.status !== 'upcoming').length ?? '–', accent: 'var(--danger)' },
+          { label: t('dash.missingEpisodes'), value: episodes.data?.filter(e => e.status !== 'upcoming').length ?? '–', accent: 'var(--danger)' },
+          { label: t('dash.upcoming'), value: (movies.data?.filter(m => m.status === 'upcoming').length ?? 0) + (episodes.data?.filter(e => e.status === 'upcoming').length ?? 0), accent: 'var(--warning)' },
+          { label: t('dash.streamable'), value: streamable, accent: 'var(--streamable)' },
         ].map(stat => (
           <motion.div
             key={stat.label}
@@ -146,9 +147,9 @@ export function Dashboard({ user }: { user: Me }) {
       {audio.data && audio.data.length > 0 && (
         <div className="card" style={{ marginBottom: 16 }}>
           <span style={{ color: 'var(--warning)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <AlertTriangle size={14} /> {audio.data.length} Dateien
+            <AlertTriangle size={14} /> {t('dash.filesCount', { n: audio.data.length })}
           </span>
-          <span style={{ color: 'var(--muted)', fontSize: 13 }}> mit fehlenden Sprachspuren</span>
+          <span style={{ color: 'var(--muted)', fontSize: 13 }}>{t('dash.withMissingLangs')}</span>
         </div>
       )}
 
@@ -159,8 +160,8 @@ export function Dashboard({ user }: { user: Me }) {
         disabled={isScanning}
       >
         {isScanning
-          ? <><Loader2 size={15} className="icon-spin" /> Scan läuft…</>
-          : <><Search size={15} /> Scan starten</>}
+          ? <><Loader2 size={15} className="icon-spin" /> {t('dash.scanRunning')}</>
+          : <><Search size={15} /> {t('dash.scanStart')}</>}
       </button>
 
       <button
@@ -168,9 +169,9 @@ export function Dashboard({ user }: { user: Me }) {
         style={{ width: '100%', justifyContent: 'center', marginBottom: 12 }}
         onClick={() => handleScan('plex')}
         disabled={isScanning}
-        title="Liest nur Plex neu ein und gleicht den Status lokal ab, ohne TMDb-Anfragen"
+        title={t('dash.rescanTitle')}
       >
-        <HardDrive size={15} /> Plex neu einlesen
+        <HardDrive size={15} /> {t('dash.rescanPlex')}
       </button>
 
       {isScanning && progress.data && (
@@ -179,14 +180,14 @@ export function Dashboard({ user }: { user: Me }) {
 
       {latestScan && !isScanning && (
         <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', marginBottom: 20 }}>
-          Letzter Scan: {latestScan.started_at ? new Date(latestScan.started_at).toLocaleString('de-DE') : '–'}
+          {t('dash.lastScan')} {latestScan.started_at ? new Date(latestScan.started_at).toLocaleString(dateLocale) : '–'}
           {' · '}
           <span style={{ color: latestScan.status === 'completed' ? 'var(--success)' : latestScan.status === 'failed' ? 'var(--danger)' : 'var(--muted)' }}>
             {latestScan.status === 'completed'
-              ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={12} /> Fertig</span>
+              ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={12} /> {t('dash.scanDone')}</span>
               : latestScan.status === 'failed'
-              ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><X size={12} /> Fehler</span>
-              : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Loader2 size={12} className="icon-spin" /> Läuft</span>}
+              ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><X size={12} /> {t('dash.scanFailed')}</span>
+              : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Loader2 size={12} className="icon-spin" /> {t('dash.scanRunningShort')}</span>}
           </span>
         </div>
       )}

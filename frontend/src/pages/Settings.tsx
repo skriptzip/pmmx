@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Radio } from 'lucide-react'
 import { useState } from 'react'
 import { getSettings, triggerScan, updateSettings } from '../api/client'
+import { t } from '../i18n'
 
 const STREAMING_OPTIONS = [
   { id: 'netflix', label: 'Netflix' },
@@ -46,7 +47,7 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['settings'] }),
   })
 
-  if (isLoading || !data) return <div className="page" style={{ color: 'var(--muted)' }}>Lädt…</div>
+  if (isLoading || !data) return <div className="page" style={{ color: 'var(--muted)' }}>{t('common.loading')}</div>
 
   const provider = notifProvider ?? data.notification_provider
   const resolvedNtfyUrl = ntfyUrl ?? data.ntfy_url
@@ -95,11 +96,11 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="page">
-      <h1 className="page-title">Einstellungen</h1>
+      <h1 className="page-title">{t('set.title')}</h1>
 
       {/* Languages */}
       <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: 12 }}>Zielsprachen – Audio</div>
+        <div style={{ fontWeight: 600, marginBottom: 12 }}>{t('set.audioLangs')}</div>
         <div style={{ marginBottom: 10 }}>
           {data.audio_langs.map(l => (
             <button key={l} className="lang-tag" style={{ cursor: 'pointer' }} onClick={() => removeLang('audio', l)}>
@@ -109,14 +110,14 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input type="text" value={audioInput} onChange={e => setAudioInput(e.target.value)}
-            placeholder="de, en, fr …" maxLength={3}
+            placeholder={t('set.langPlaceholder')} maxLength={3}
             onKeyDown={e => e.key === 'Enter' && addLang('audio')} />
           <button className="btn btn-ghost" style={{ whiteSpace: 'nowrap' }} onClick={() => addLang('audio')}>+</button>
         </div>
       </div>
 
       <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: 12 }}>Zielsprachen – Untertitel</div>
+        <div style={{ fontWeight: 600, marginBottom: 12 }}>{t('set.subLangs')}</div>
         <div style={{ marginBottom: 10 }}>
           {data.subtitle_langs.map(l => (
             <button key={l} className="lang-tag" style={{ cursor: 'pointer' }} onClick={() => removeLang('sub', l)}>
@@ -126,7 +127,7 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input type="text" value={subInput} onChange={e => setSubInput(e.target.value)}
-            placeholder="de, en, fr …" maxLength={3}
+            placeholder={t('set.langPlaceholder')} maxLength={3}
             onKeyDown={e => e.key === 'Enter' && addLang('sub')} />
           <button className="btn btn-ghost" style={{ whiteSpace: 'nowrap' }} onClick={() => addLang('sub')}>+</button>
         </div>
@@ -134,12 +135,12 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
 
       {/* Streaming services */}
       <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: 4 }}>Eigene Streaming-Dienste</div>
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('set.ownServices')}</div>
         <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-          Gesucht wird immer bei allen Anbietern. Deine Auswahl bestimmt nur, wofür du benachrichtigt wirst.
+          {t('set.ownServicesHint')}
         </div>
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Region</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>{t('set.region')}</div>
           <div style={{ display: 'flex', gap: 6 }}>
             {(['DE', 'GB', 'US'] as const).map(r => (
               <button
@@ -172,10 +173,10 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
 
       {/* Notifications */}
       <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: 12 }}>Benachrichtigungen</div>
+        <div style={{ fontWeight: 600, marginBottom: 12 }}>{t('set.notifications')}</div>
 
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Dienst</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>{t('set.provider')}</div>
           <div style={{ display: 'flex', gap: 6 }}>
             {(['ntfy', 'discord', 'pushover', 'none'] as const).map(p => (
               <button
@@ -184,7 +185,7 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
                 style={{ fontSize: 12 }}
                 onClick={() => setNotifProvider(p === 'none' ? '' : p)}
               >
-                {p === 'none' ? 'Aus' : p}
+                {p === 'none' ? t('set.off') : p}
               </button>
             ))}
           </div>
@@ -192,24 +193,24 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
 
         {provider === 'ntfy' && (
           <>
-            <SettingsInput label="ntfy Server-URL" value={resolvedNtfyUrl}
+            <SettingsInput label={t('set.ntfyUrl')} value={resolvedNtfyUrl}
               onChange={setNtfyUrl} placeholder="https://ntfy.sh" />
-            <SettingsInput label="Topic" value={resolvedNtfyTopic}
+            <SettingsInput label={t('set.topic')} value={resolvedNtfyTopic}
               onChange={setNtfyTopic} placeholder="plex-missing-media" />
           </>
         )}
 
         {provider === 'discord' && (
-          <SettingsInput label="Webhook-URL" value={resolvedDiscordUrl}
+          <SettingsInput label={t('set.webhookUrl')} value={resolvedDiscordUrl}
             onChange={setDiscordUrl} placeholder="https://discord.com/api/webhooks/…" />
         )}
 
         {provider === 'pushover' && (
           <>
-            <SettingsInput label="API Token" value={resolvedPushoverToken}
-              onChange={setPushoverToken} placeholder="App-Token von pushover.net" type="password" />
-            <SettingsInput label="User Key" value={resolvedPushoverUser}
-              onChange={setPushoverUser} placeholder="Dein Pushover User Key" />
+            <SettingsInput label={t('set.apiToken')} value={resolvedPushoverToken}
+              onChange={setPushoverToken} placeholder={t('set.apiTokenPh')} type="password" />
+            <SettingsInput label={t('set.userKey')} value={resolvedPushoverUser}
+              onChange={setPushoverUser} placeholder={t('set.userKeyPh')} />
           </>
         )}
 
@@ -218,22 +219,22 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
           style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}
           onClick={saveNotifications}
         >
-          {notifSaved ? '✓ Gespeichert' : 'Benachrichtigungen speichern'}
+          {notifSaved ? t('set.saved') : t('set.saveNotif')}
         </button>
       </div>
 
       {/* Actions */}
       <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: 12 }}>Aktionen</div>
+        <div style={{ fontWeight: 600, marginBottom: 12 }}>{t('set.actions')}</div>
         <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', marginBottom: 8 }}
           onClick={() => triggerScan('availability')}>
-          <Radio size={14} /> Streaming-Verfügbarkeit prüfen
+          <Radio size={14} /> {t('set.checkAvailability')}
         </button>
       </div>
 
       <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', color: 'var(--danger)', borderColor: 'var(--danger)' }}
         onClick={onLogout}>
-        Abmelden
+        {t('set.logout')}
       </button>
 
       <div style={{ marginTop: 24, padding: '16px 0', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
