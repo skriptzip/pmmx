@@ -7,15 +7,13 @@ dependencies = [
     "plexapi>=4.15",
     "httpx>=0.27",
     "pydantic>=2.7",
-    "pydantic-settings>=2.3",
-    "pyyaml>=6.0",
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",
     "apscheduler>=3.10",
     "asyncpg>=0.29",
     "sqlalchemy[asyncio]>=2.0",
     "tmdbsimple>=2.9",
-    "python-jose[cryptography]>=3.3",
+    "pyjwt>=2.9",
     "apscheduler[asyncio]>=3.10",
 ]
 

@@ -1,16 +1,23 @@
 from __future__ import annotations
 
+import asyncio
 import json
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
 from app.config import get_settings
 from app.db.models import User
+from app.notifications.urlcheck import validate_discord_url, validate_url
 
 router = APIRouter()
+
+_NOTIFICATION_KEYS = {
+    "provider", "ntfy_url", "ntfy_topic", "discord_webhook_url", "pushover_token", "pushover_user",
+}
+_PROVIDERS = {"", "ntfy", "discord", "pushover"}
 
 _DEFAULT_AUDIO = ["de", "en"]
 _DEFAULT_SUBTITLES = ["de"]
@@ -58,7 +65,22 @@ async def update_settings(
         user.streaming_region = body.streaming_region
     if body.notification_config is not None:
         existing = json.loads(user.notification_config) if user.notification_config else {}
-        existing.update({k: v for k, v in body.notification_config.items() if v is not None})
+        incoming = {
+            k: v for k, v in body.notification_config.items()
+            if k in _NOTIFICATION_KEYS and isinstance(v, str) and len(v) <= 500
+        }
+        try:
+            if incoming.get("provider", "") not in _PROVIDERS:
+                raise ValueError("Unknown notification provider")
+            if incoming.get("ntfy_url"):
+                await asyncio.to_thread(
+                    validate_url, incoming["ntfy_url"], get_settings().notifications.internal_hosts
+                )
+            if incoming.get("discord_webhook_url"):
+                validate_discord_url(incoming["discord_webhook_url"])
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc))
+        existing.update(incoming)
         user.notification_config = json.dumps(existing)
     await db.commit()
     return {"message": "Settings updated"}

@@ -56,3 +56,7 @@ cd frontend
 pnpm install
 pnpm dev                       # proxies /api to :8000
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE).

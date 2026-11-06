@@ -25,7 +25,7 @@ async function req<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 // Auth
 export const createPlexPin = () =>
-  req<{ pin_id: number; auth_url: string }>('/auth/plex/pin', { method: 'POST' })
+  req<{ pin_id: number; code: string; client_id: string; auth_url: string }>('/auth/plex/pin', { method: 'POST' })
 
 export interface PlexServer {
   name: string
@@ -33,9 +33,9 @@ export interface PlexServer {
   client_identifier: string
 }
 
-export const pollPlexPin = (pinId: number) =>
+export const pollPlexPin = (pinId: number, code: string, clientId: string) =>
   req<{ status: 'pending' } | { status: 'authorized'; jwt: string; servers: PlexServer[] } | { status: 'expired' }>(
-    `/auth/plex/poll/${pinId}`
+    `/auth/plex/poll/${pinId}?code=${encodeURIComponent(code)}&client_id=${encodeURIComponent(clientId)}`
   )
 
 export const selectServer = (server_name: string, server_client_id: string) =>

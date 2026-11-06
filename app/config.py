@@ -33,7 +33,19 @@ class AuthConfig(BaseModel):
         return v
 
 
-_INSECURE_SECRETS = {"change-me", "change-me-generate-a-random-32-char-string-in-production"}
+class NotificationsConfig(BaseModel):
+    # Hosts, die auf private Adressen zeigen dürfen (z. B. der mitgelieferte ntfy-Container).
+    internal_hosts: list[str] = ["ntfy"]
+
+    @field_validator("internal_hosts", mode="before")
+    @classmethod
+    def _split_csv(cls, v):
+        if isinstance(v, str):
+            return [x.strip() for x in v.split(",") if x.strip()]
+        return v
+
+
+_INSECURE_SECRETS ={"change-me", "change-me-generate-a-random-32-char-string-in-production"}
 
 
 class Settings(BaseModel):
@@ -42,6 +54,7 @@ class Settings(BaseModel):
     scan: ScanConfig = ScanConfig()
     database: DatabaseConfig = DatabaseConfig()
     auth: AuthConfig = AuthConfig()
+    notifications: NotificationsConfig = NotificationsConfig()
 
     @model_validator(mode="after")
     def _check_secret(self):

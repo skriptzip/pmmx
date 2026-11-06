@@ -26,7 +26,7 @@ async def _cleanup_stale_runs() -> None:
             .where(ScanRun.status == "running")
             .values(
                 status="failed",
-                error="Server neugestartet — Scan wurde unterbrochen",
+                error="Server neugestartet, Scan wurde unterbrochen",
                 completed_at=datetime.now(timezone.utc),
             )
         )

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,13 +23,18 @@ class ServerSelect(BaseModel):
 
 @router.post("/plex/pin")
 async def start_plex_login():
-    pin_id, auth_url = await asyncio.to_thread(create_pin)
-    return {"pin_id": pin_id, "auth_url": auth_url}
+    pin_id, code, client_id, auth_url = await asyncio.to_thread(create_pin)
+    return {"pin_id": pin_id, "code": code, "client_id": client_id, "auth_url": auth_url}
 
 
 @router.get("/plex/poll/{pin_id}")
-async def poll_plex_login(pin_id: int, db: AsyncSession = Depends(get_db)):
-    token = await asyncio.to_thread(poll_pin, pin_id)
+async def poll_plex_login(
+    pin_id: int,
+    code: str = Query(..., min_length=1, max_length=64),
+    client_id: str = Query(..., min_length=1, max_length=64),
+    db: AsyncSession = Depends(get_db),
+):
+    token = await asyncio.to_thread(poll_pin, pin_id, code, client_id)
     if token is False:
         return {"status": "expired"}
     if not token:

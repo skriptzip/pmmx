@@ -70,7 +70,7 @@ async def refresh_show(
         raise HTTPException(status_code=404, detail="Show not in library")
     except Exception as exc:
         logger.exception("Refresh of show %d failed for user %s", tmdb_id, user.username)
-        raise HTTPException(status_code=502, detail=f"Refresh failed: {exc}")
+        raise HTTPException(status_code=502, detail="Refresh failed, see server log")
     return (await show_items(db, user.id, [lib]))[0]
 
 

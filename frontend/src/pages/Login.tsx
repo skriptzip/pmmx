@@ -29,13 +29,13 @@ export function Login({ onLogin }: { onLogin: (jwt: string) => void }) {
     setError('')
     setStage('waiting')
     try {
-      const { pin_id, auth_url } = await createPlexPin()
+      const { pin_id, code, client_id, auth_url } = await createPlexPin()
       setAuthUrl(auth_url)
 
       // Poll every 2 s until the user has logged in on plex.tv
       pollRef.current = setInterval(async () => {
         try {
-          const res = await pollPlexPin(pin_id)
+          const res = await pollPlexPin(pin_id, code, client_id)
           if (res.status === 'expired') {
             clearInterval(pollRef.current!)
             setStage('idle')

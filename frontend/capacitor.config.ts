@@ -8,7 +8,8 @@ const config: CapacitorConfig = {
     // Für Entwicklung: Backend-URL eintragen.
     // Für Production-Build leer lassen (App lädt aus dist/).
     // url: 'http://192.168.1.x:80',
-    cleartext: true,
+    // Nur für lokale Entwicklung auf true setzen, wenn das Backend ohne HTTPS läuft.
+    cleartext: false,
   },
   plugins: {
     PushNotifications: {
@@ -19,7 +20,7 @@ const config: CapacitorConfig = {
     contentInset: 'always',
   },
   android: {
-    allowMixedContent: true,
+    allowMixedContent: false,
   },
 }
 
