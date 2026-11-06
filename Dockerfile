@@ -12,8 +12,11 @@ COPY app/ ./app/
 RUN useradd --system --no-create-home pmmx && chown -R pmmx /app
 USER pmmx
 
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1 \
+    PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000
 
-CMD ["uv", "run", "--no-sync", "python", "-m", "app.server"]
+# Use the venv python directly: `uv run` needs a writable cache dir,
+# which the unprivileged user (no home directory) does not have.
+CMD ["python", "-m", "app.server"]
