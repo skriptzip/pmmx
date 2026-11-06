@@ -2,11 +2,12 @@
 
 pmmx scans your Plex library and shows you what is missing: incomplete movie collections, missing episodes and files without your preferred audio or subtitle languages. For missing titles it also checks which streaming service offers them.
 
-<p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="Dashboard" height="420">
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/dashboard-mobile.png" alt="Mobile view" height="420">
-</p>
+<table>
+  <tr>
+    <td width="72%" valign="middle"><img src="docs/screenshots/dashboard.png" alt="Dashboard" width="100%"></td>
+    <td width="28%" valign="middle"><img src="docs/screenshots/dashboard-mobile.png" alt="Mobile view" width="100%"></td>
+  </tr>
+</table>
 
 ## Features
 
