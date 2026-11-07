@@ -1,3 +1,5 @@
+<p align="center"><img src="frontend/public/icon.svg" alt="pmmx logo" width="96"></p>
+
 # pmmx: Plex Missing-Media-Scanner
 
 pmmx scans your Plex library and shows you what is missing: incomplete movie collections, missing episodes and files without your preferred audio or subtitle languages. For missing titles it also checks which streaming service offers them.
