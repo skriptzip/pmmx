@@ -1,3 +1,4 @@
+import { clearServerUrl, isNative } from '../api/server'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Radio } from 'lucide-react'
 import { useState } from 'react'
@@ -21,8 +22,8 @@ function SettingsInput({ label, value, onChange, placeholder, type = 'text' }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string
 }) {
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>{label}</div>
+    <div className="field">
+      <div className="field-label">{label}</div>
       <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
     </div>
   )
@@ -96,11 +97,12 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="page">
-      <h1 className="page-title">{t('set.title')}</h1>
+      <div className="page-head"><h1 className="page-title">{t('set.title')}</h1></div>
 
+      <div className="settings-grid">
       {/* Languages */}
-      <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: 12 }}>{t('set.audioLangs')}</div>
+      <div className="card">
+        <div className="card-title" style={{ marginBottom: 12 }}>{t('set.audioLangs')}</div>
         <div style={{ marginBottom: 10 }}>
           {data.audio_langs.map(l => (
             <button key={l} className="lang-tag" style={{ cursor: 'pointer' }} onClick={() => removeLang('audio', l)}>
@@ -116,8 +118,8 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: 12 }}>{t('set.subLangs')}</div>
+      <div className="card">
+        <div className="card-title" style={{ marginBottom: 12 }}>{t('set.subLangs')}</div>
         <div style={{ marginBottom: 10 }}>
           {data.subtitle_langs.map(l => (
             <button key={l} className="lang-tag" style={{ cursor: 'pointer' }} onClick={() => removeLang('sub', l)}>
@@ -134,14 +136,12 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
       </div>
 
       {/* Streaming services */}
-      <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('set.ownServices')}</div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-          {t('set.ownServicesHint')}
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>{t('set.region')}</div>
-          <div style={{ display: 'flex', gap: 6 }}>
+      <div className="card">
+        <div className="card-title">{t('set.ownServices')}</div>
+        <div className="card-hint">{t('set.ownServicesHint')}</div>
+        <div className="field">
+          <div className="field-label">{t('set.region')}</div>
+          <div className="chip-row">
             {(['DE', 'GB', 'US'] as const).map(r => (
               <button
                 key={r}
@@ -160,11 +160,10 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
           <div key={s.id} className="toggle-row">
             <span>{s.label}</span>
             <button
-              style={{
-                width: 44, height: 24, borderRadius: 12, border: 'none',
-                background: data.owned_streaming_services.includes(s.id) ? 'var(--accent)' : 'var(--border)',
-                transition: 'background .2s',
-              }}
+              role="switch"
+              aria-checked={data.owned_streaming_services.includes(s.id)}
+              aria-label={s.label}
+              className={`switch${data.owned_streaming_services.includes(s.id) ? ' on' : ''}`}
               onClick={() => toggleService(s.id)}
             />
           </div>
@@ -172,12 +171,12 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
       </div>
 
       {/* Notifications */}
-      <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: 12 }}>{t('set.notifications')}</div>
+      <div className="card">
+        <div className="card-title" style={{ marginBottom: 12 }}>{t('set.notifications')}</div>
 
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>{t('set.provider')}</div>
-          <div style={{ display: 'flex', gap: 6 }}>
+        <div className="field">
+          <div className="field-label">{t('set.provider')}</div>
+          <div className="chip-row">
             {(['ntfy', 'discord', 'pushover', 'none'] as const).map(p => (
               <button
                 key={p}
@@ -224,18 +223,24 @@ export function Settings({ onLogout }: { onLogout: () => void }) {
       </div>
 
       {/* Actions */}
-      <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: 12 }}>{t('set.actions')}</div>
-        <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', marginBottom: 8 }}
-          onClick={() => triggerScan('availability')}>
-          <Radio size={14} /> {t('set.checkAvailability')}
-        </button>
+      <div className="card">
+        <div className="card-title" style={{ marginBottom: 12 }}>{t('set.actions')}</div>
+        <div className="action-stack">
+          <button className="btn btn-ghost" onClick={() => triggerScan('availability')}>
+            <Radio size={14} /> {t('set.checkAvailability')}
+          </button>
+          {isNative && (
+            <button className="btn btn-ghost"
+              onClick={() => { onLogout(); clearServerUrl(); window.location.reload() }}>
+              {t('set.changeServer')}
+            </button>
+          )}
+          <button className="btn btn-ghost btn-danger" onClick={onLogout}>
+            {t('set.logout')}
+          </button>
+        </div>
       </div>
-
-      <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', color: 'var(--danger)', borderColor: 'var(--danger)' }}
-        onClick={onLogout}>
-        {t('set.logout')}
-      </button>
+      </div>
 
       <div style={{ marginTop: 24, padding: '16px 0', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
         <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer">

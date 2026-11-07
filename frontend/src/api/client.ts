@@ -1,6 +1,6 @@
 import type { LibraryMovie, LibraryShow, Me, MissingAudio, MissingEpisode, MissingMovie, ScanProgress, ScanRun, Status, UserSettings } from './types'
 
-const BASE = '/api'
+import { apiBase } from './server'
 
 function getToken(): string | null {
   return localStorage.getItem('pmmx_token')
@@ -8,7 +8,7 @@ function getToken(): string | null {
 
 async function req<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken()
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${apiBase()}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

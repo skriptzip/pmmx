@@ -1,14 +1,31 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Clapperboard, ExternalLink, Film, RefreshCw, Search, Tv, X } from 'lucide-react'
-import { useState } from 'react'
+import { Clapperboard, ExternalLink, Film, Loader2, RefreshCw, Search, Tv, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getLibraryMovies, getLibraryShows, getMissingEpisodes, refreshShow } from '../api/client'
 import type { LibraryMovie, LibraryShow, MissingEpisode, StreamingService } from '../api/types'
 import { PosterProviders, ProviderLogos, TYPE_LABEL } from '../components/ProviderLogos'
+import { useProgressive } from '../hooks/useProgressive'
 import { locale, t } from '../i18n'
 
-const TMDB_IMG = 'https://image.tmdb.org/t/p/w300'
-const TMDB_LOGO = 'https://image.tmdb.org/t/p/w45'
+const TMDB = 'https://image.tmdb.org/t/p'
+const TMDB_IMG = `${TMDB}/w342`
+const TMDB_LOGO = `${TMDB}/w45`
+
+// Kleines Bild fuer das Raster, grosses nur auf dichten Displays. Spart Daten und Speicher auf dem Handy.
+const posterSrc = (path: string) => ({
+  src: `${TMDB}/w185${path}`,
+  srcSet: `${TMDB}/w185${path} 185w, ${TMDB}/w342${path} 342w`,
+  sizes: '(min-width: 900px) 176px, (min-width: 520px) 140px, 33vw',
+})
+
+// Sperrt das Scrollen der Seite hinter einem offenen Detailfenster
+function useBodyLock() {
+  useEffect(() => {
+    document.body.classList.add('modal-open')
+    return () => document.body.classList.remove('modal-open')
+  }, [])
+}
 
 type MovieFilter = 'all' | 'present' | 'missing' | 'upcoming' | 'streamable'
 type ShowFilter  = 'all' | 'complete' | 'incomplete' | 'upcoming' | 'streamable'
@@ -40,7 +57,7 @@ function PosterItem({ movie, onClick }: { movie: LibraryMovie; onClick: () => vo
   return (
     <div className="poster-item clickable" onClick={onClick}>
       {hasPoster ? (
-        <img src={`${TMDB_IMG}${movie.poster_path}`} alt={movie.title} loading="lazy"
+        <img {...posterSrc(movie.poster_path!)} alt={movie.title} loading="lazy" decoding="async"
           onError={() => setImgErr(true)} />
       ) : (
         <div className="poster-placeholder">{movie.title}</div>
@@ -63,9 +80,10 @@ function PosterItem({ movie, onClick }: { movie: LibraryMovie; onClick: () => vo
 
 function MovieDetailPanel({ movie, onClose }: { movie: LibraryMovie; onClose: () => void }) {
   const [imgErr, setImgErr] = useState(false)
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 900
+  useBodyLock()
 
-  const grouped = movie.streaming_services.reduce<Record<string, StreamingService[]>>((acc, s) => {
+  const grouped =movie.streaming_services.reduce<Record<string, StreamingService[]>>((acc, s) => {
     acc[s.type] = [...(acc[s.type] ?? []), s]
     return acc
   }, {})
@@ -101,7 +119,7 @@ function MovieDetailPanel({ movie, onClose }: { movie: LibraryMovie; onClose: ()
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 17, lineHeight: 1.3, marginBottom: 4 }}>
+            <div className="detail-title">
               {movie.title}{movie.year ? ` (${movie.year})` : ''}
             </div>
             {movie.collection_name && (
@@ -113,14 +131,13 @@ function MovieDetailPanel({ movie, onClose }: { movie: LibraryMovie; onClose: ()
               {movie.status === 'missing' ? t('common.missing') : movie.status === 'upcoming' ? t('common.soon') : movie.status === 'streamable' ? t('common.available') : t('common.present')}
             </span>
           </div>
-          <button onClick={onClose}
-            style={{ background: 'none', border: 'none', color: 'var(--muted)', padding: '2px 0 0 8px', display: 'flex', alignSelf: 'flex-start' }}>
+          <button className="detail-close" onClick={onClose} aria-label="Close">
             <X size={20} />
           </button>
         </div>
 
         {/* Provider list */}
-        <div style={{ padding: '0 16px 8px' }}>
+        <div className="detail-panel-body">
           {movie.streaming_services.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted)', fontSize: 14 }}>
               {t('lib.noStreaming')}
@@ -178,10 +195,10 @@ function ShowPosterItem({ show, onClick }: { show: LibraryShow; onClick: () => v
   const overlay = pureMissing > 0 ? 'missing' : show.streamable_count > 0 ? 'streamable' : 'upcoming'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
+    <div className="poster-cell">
       <div className="poster-item clickable" onClick={onClick}>
         {hasPoster ? (
-          <img src={`${TMDB_IMG}${show.poster_path}`} alt={show.title} loading="lazy"
+          <img {...posterSrc(show.poster_path!)} alt={show.title} loading="lazy" decoding="async"
             onError={() => setImgErr(true)} />
         ) : (
           <div className="poster-placeholder">{show.title}</div>
@@ -236,8 +253,9 @@ function ShowDetailPanel({ show, onClose, onUpdated }: {
   onUpdated: (show: LibraryShow) => void
 }) {
   const [imgErr, setImgErr] = useState(false)
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 900
   const queryClient = useQueryClient()
+  useBodyLock()
 
   // Liest nur diese Serie neu aus Plex, ohne vollständigen Scan
   const refresh = useMutation({
@@ -293,7 +311,7 @@ function ShowDetailPanel({ show, onClose, onUpdated }: {
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 17, lineHeight: 1.3, marginBottom: 6 }}>
+            <div className="detail-title">
               {show.title}{show.year ? ` (${show.year})` : ''}
             </div>
             <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>
@@ -304,8 +322,7 @@ function ShowDetailPanel({ show, onClose, onUpdated }: {
               : <span style={{ fontSize: 12, color: 'var(--success)', fontWeight: 600 }}>{t('lib.completeCheck')}</span>
             }
             <div style={{ marginTop: 8 }}>
-              <button onClick={() => refresh.mutate()} disabled={refresh.isPending}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => refresh.mutate()} disabled={refresh.isPending}>
                 <RefreshCw size={13} className={refresh.isPending ? 'icon-spin' : undefined} />
                 {refresh.isPending ? t('lib.checking') : t('lib.refresh')}
               </button>
@@ -316,14 +333,13 @@ function ShowDetailPanel({ show, onClose, onUpdated }: {
               )}
             </div>
           </div>
-          <button onClick={onClose}
-            style={{ background: 'none', border: 'none', color: 'var(--muted)', padding: '2px 0 0 8px', display: 'flex', alignSelf: 'flex-start' }}>
+          <button className="detail-close" onClick={onClose} aria-label="Close">
             <X size={20} />
           </button>
         </div>
 
         {show.streaming_services.length > 0 && (
-          <div style={{ padding: '0 16px 8px' }}>
+          <div className="detail-panel-body">
             <div className="season-header">
               {t('lib.availableAt')}{show.streamable_count > 0 ? t('lib.nEpisodes', { n: show.streamable_count }) : ''}
             </div>
@@ -332,10 +348,8 @@ function ShowDetailPanel({ show, onClose, onUpdated }: {
         )}
 
         {/* Season / episode list */}
-        <div style={{ padding: '0 16px' }}>
-          {isLoading && (
-            <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 24 }}>{t('common.loading')}</div>
-          )}
+        <div className="detail-panel-body">
+          {isLoading && <div className="loading-line">{t('common.loading')}</div>}
 
           {!isLoading && episodes.length === 0 && (
             <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted)', fontSize: 14 }}>
@@ -408,38 +422,43 @@ export function Library() {
     .flatMap(([, ms]) => ms)
     .sort((a, b) => a.title.localeCompare(b.title, locale))
 
+  // Schrittweises Rendern: bei grossen Bibliotheken nicht alle Poster auf einmal bauen
+  const total = tab === 'movies' ? filteredMovies.length : filteredShows.length
+  const { count, hasMore, sentinelRef } = useProgressive(total, `${tab}|${movieFilter}|${showFilter}|${q}`)
+  let budget = count
+  const take = <T,>(list: T[]) => {
+    const part = list.slice(0, Math.max(0, budget))
+    budget -= part.length
+    return part
+  }
+  const visibleCollections = collections.map(([name, ms]) => [name, take(ms)] as const).filter(([, ms]) => ms.length > 0)
+  const visibleStandalone = take(standalone)
+  const visibleShows = filteredShows.slice(0, count)
+
   return (
     <div className="page">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 className="page-title" style={{ marginBottom: 0 }}>{t('lib.title')}</h1>
-        <div style={{ display: 'flex', background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)', padding: 2, gap: 2 }}>
+      <div className="page-head">
+        <h1 className="page-title">{t('lib.title')}</h1>
+        <div className="segmented">
           {(['movies', 'shows'] as const).map(tabId => (
-            <button key={tabId} onClick={() => setTab(tabId)} style={{
-              padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600,
-              background: tab === tabId ? 'var(--accent)' : 'transparent',
-              color: tab === tabId ? '#000' : 'var(--muted)',
-              transition: 'all .15s',
-            }}>
+            <button key={tabId} className={tab === tabId ? 'active' : ''} onClick={() => setTab(tabId)}>
               {tabId === 'movies'
-            ? <><Film size={14} style={{ flexShrink: 0 }} /> {t('common.movies')}</>
-            : <><Tv size={14} style={{ flexShrink: 0 }} /> {t('common.series')}</>}
+                ? <><Film size={14} /> {t('common.movies')}</>
+                : <><Tv size={14} /> {t('common.series')}</>}
             </button>
           ))}
         </div>
       </div>
 
       <div className="sticky-bar">
-      <div style={{ position: 'relative', marginBottom: 8 }}>
+      <div className="search-box">
         <input type="text"
           placeholder={tab === 'movies' ? t('lib.searchMovie') : t('lib.searchShow')}
-          value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 36 }} />
-        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none', display: 'flex' }}>
-          <Search size={15} />
-        </span>
+          value={search} onChange={e => setSearch(e.target.value)} />
+        <span className="search-icon"><Search size={16} /></span>
         {search && (
-          <button onClick={() => setSearch('')}
-            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', padding: '0 4px', display: 'flex' }}>
-            <X size={15} />
+          <button className="search-clear" onClick={() => setSearch('')} aria-label="Clear">
+            <X size={16} />
           </button>
         )}
       </div>
@@ -469,9 +488,7 @@ export function Library() {
       {tab === 'movies' && (
         <>
 
-          {moviesQ.isLoading && (
-            <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 48 }}>{t('common.loading')}</div>
-          )}
+          {moviesQ.isLoading && <div className="loading-line">{t('common.loading')}</div>}
           {!moviesQ.isLoading && filteredMovies.length === 0 && (
             <div className="empty-state">
               <div className="icon"><Clapperboard size={48} /></div>
@@ -479,23 +496,21 @@ export function Library() {
             </div>
           )}
 
-          {collections.map(([name, movies]) => (
-            <motion.div key={name} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <CollectionSection name={name} movies={movies} onSelect={setSelectedMovie} />
-            </motion.div>
+          {visibleCollections.map(([name, movies]) => (
+            <CollectionSection key={name} name={name} movies={movies} onSelect={setSelectedMovie} />
           ))}
 
-          {standalone.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          {visibleStandalone.length > 0 && (
+            <div>
               {collections.length > 0 && (
                 <div className="section-header" style={{ marginTop: 24 }}>
                   {t('lib.moreMovies', { n: standalone.length })}
                 </div>
               )}
               <div className="poster-grid">
-                {standalone.map(m => <PosterItem key={m.id} movie={m} onClick={() => setSelectedMovie(m)} />)}
+                {visibleStandalone.map(m => <PosterItem key={m.id} movie={m} onClick={() => setSelectedMovie(m)} />)}
               </div>
-            </motion.div>
+            </div>
           )}
         </>
       )}
@@ -503,26 +518,24 @@ export function Library() {
       {/* Shows tab */}
       {tab === 'shows' && (
         <>
-          {showsQ.isLoading && (
-            <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 48 }}>{t('common.loading')}</div>
-          )}
+          {showsQ.isLoading && <div className="loading-line">{t('common.loading')}</div>}
           {!showsQ.isLoading && filteredShows.length === 0 && (
             <div className="empty-state">
               <div className="icon"><Tv size={48} /></div>
               <p>{t('lib.noShows1')}<br />{t('lib.scanHint')}</p>
             </div>
           )}
-          {!showsQ.isLoading && filteredShows.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="poster-grid">
-                {filteredShows.map(s => (
-                  <ShowPosterItem key={s.id} show={s} onClick={() => setSelectedShow(s)} />
-                ))}
-              </div>
-            </motion.div>
+          {visibleShows.length > 0 && (
+            <div className="poster-grid">
+              {visibleShows.map(s => (
+                <ShowPosterItem key={s.id} show={s} onClick={() => setSelectedShow(s)} />
+              ))}
+            </div>
           )}
         </>
       )}
+
+      {hasMore && <div ref={sentinelRef} className="load-more"><Loader2 size={16} className="icon-spin" /></div>}
 
       {/* Show detail panel */}
       <AnimatePresence>

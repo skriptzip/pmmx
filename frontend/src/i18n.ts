@@ -24,6 +24,14 @@ const de = {
   'type.rent': 'Leihen',
   'type.buy': 'Kaufen',
 
+  // Server-Setup (nur native App)
+  'setup.title': 'Server verbinden',
+  'setup.hint': 'Gib die Adresse deines pmmx-Servers ein (HTTPS).',
+  'setup.connect': 'Verbinden',
+  'setup.checking': 'Prüfe…',
+  'setup.errUnreachable': 'Server nicht erreichbar. Adresse und HTTPS prüfen.',
+  'set.changeServer': 'Server wechseln',
+
   // Login
   'login.subtitle': 'Plex Missing-Media-Scanner',
   'login.button': 'Mit Plex anmelden',
@@ -145,6 +153,14 @@ const en: Record<TKey, string> = {
   'type.flatrate': 'Stream',
   'type.rent': 'Rent',
   'type.buy': 'Buy',
+
+  // Server setup (native app only)
+  'setup.title': 'Connect to server',
+  'setup.hint': 'Enter the address of your pmmx server (HTTPS).',
+  'setup.connect': 'Connect',
+  'setup.checking': 'Checking…',
+  'setup.errUnreachable': 'Server unreachable. Check the address and HTTPS.',
+  'set.changeServer': 'Change server',
 
   'login.subtitle': 'Plex Missing-Media-Scanner',
   'login.button': 'Sign in with Plex',

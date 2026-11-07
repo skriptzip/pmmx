@@ -42,7 +42,6 @@ function ScanProgressCard({ progress }: { progress: ScanProgress }) {
       className="card"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      style={{ marginBottom: 16 }}
     >
       <div style={{ fontWeight: 600, marginBottom: 10, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 8 }}>
         <Loader2 size={15} className="icon-spin" /> {stageName(progress.stage)}
@@ -113,49 +112,50 @@ export function Dashboard({ user }: { user: Me }) {
 
   return (
     <div className="page">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div className="page-head">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700 }}>{t('dash.title')}</h1>
-          {user.server_name && (
-            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{user.server_name}</div>
-          )}
+          <h1 className="page-title">{t('dash.title')}</h1>
+          {user.server_name && <div className="page-sub">{user.server_name}</div>}
         </div>
         {user.thumb && (
-          <img src={user.thumb} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} />
+          <img src={user.thumb} alt="" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover' }} />
         )}
       </div>
 
-      <div className="stat-grid">
+      <div className="stat-grid" style={{ marginBottom: 14 }}>
         {[
           { label: t('dash.missingMovies'), value: movies.data?.filter(m => m.status !== 'upcoming').length ?? '–', accent: 'var(--danger)' },
           { label: t('dash.missingEpisodes'), value: episodes.data?.filter(e => e.status !== 'upcoming').length ?? '–', accent: 'var(--danger)' },
           { label: t('dash.upcoming'), value: (movies.data?.filter(m => m.status === 'upcoming').length ?? 0) + (episodes.data?.filter(e => e.status === 'upcoming').length ?? 0), accent: 'var(--warning)' },
           { label: t('dash.streamable'), value: streamable, accent: 'var(--streamable)' },
         ].map(stat => (
-          <motion.div
-            key={stat.label}
-            className="stat-card"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="stat-value" style={{ color: stat.accent }}>{stat.value}</div>
+          <div key={stat.label} className="stat-card" style={{ ['--stat-color' as string]: stat.accent }}>
+            <div className="stat-value">{stat.value}</div>
             <div className="stat-label">{stat.label}</div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
+      <div className="dash-grid">
+      <div>
+      {isScanning && progress.data && (
+        <ScanProgressCard progress={progress.data} />
+      )}
+
       {audio.data && audio.data.length > 0 && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <span style={{ color: 'var(--warning)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <div className="card">
+          <span style={{ color: 'var(--warning)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 6 }}>
             <AlertTriangle size={14} /> {t('dash.filesCount', { n: audio.data.length })}
           </span>
           <span style={{ color: 'var(--muted)', fontSize: 13 }}>{t('dash.withMissingLangs')}</span>
         </div>
       )}
+      </div>
 
+      <div className="card">
+      <div className="action-stack">
       <button
         className="btn btn-primary"
-        style={{ width: '100%', justifyContent: 'center', marginBottom: 12 }}
         onClick={() => handleScan('full')}
         disabled={isScanning}
       >
@@ -166,20 +166,16 @@ export function Dashboard({ user }: { user: Me }) {
 
       <button
         className="btn btn-ghost"
-        style={{ width: '100%', justifyContent: 'center', marginBottom: 12 }}
         onClick={() => handleScan('plex')}
         disabled={isScanning}
         title={t('dash.rescanTitle')}
       >
         <HardDrive size={15} /> {t('dash.rescanPlex')}
       </button>
-
-      {isScanning && progress.data && (
-        <ScanProgressCard progress={progress.data} />
-      )}
+      </div>
 
       {latestScan && !isScanning && (
-        <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', marginTop: 14 }}>
           {t('dash.lastScan')} {latestScan.started_at ? new Date(latestScan.started_at).toLocaleString(dateLocale) : '–'}
           {' · '}
           <span style={{ color: latestScan.status === 'completed' ? 'var(--success)' : latestScan.status === 'failed' ? 'var(--danger)' : 'var(--muted)' }}>
@@ -191,6 +187,8 @@ export function Dashboard({ user }: { user: Me }) {
           </span>
         </div>
       )}
+      </div>
+      </div>
     </div>
   )
 }

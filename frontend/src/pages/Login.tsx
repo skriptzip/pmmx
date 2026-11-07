@@ -1,5 +1,4 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Clapperboard } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPlexPin, pollPlexPin, selectServer } from '../api/client'
 import { t } from '../i18n'
@@ -104,7 +103,9 @@ export function Login({ onLogin }: { onLogin: (jwt: string) => void }) {
           textAlign: 'center',
         }}
       >
-        <div style={{ marginBottom: 12, color: 'var(--accent)' }}><Clapperboard size={48} /></div>
+        <div style={{ marginBottom: 12 }}>
+          <img src="/icon.svg" alt="" width={72} height={72} style={{ borderRadius: 16 }} />
+        </div>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>pmmx</h1>
         <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 28 }}>
           {t('login.subtitle')}
