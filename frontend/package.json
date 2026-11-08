@@ -7,7 +7,18 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "cap:sync": "pnpm build && cap sync",
+    "cap:copy": "pnpm build && cap copy",
+    "android:open": "cap open android",
+    "android:run": "pnpm build && cap sync android && cap run android",
+    "android:live": "cap run android -l --external",
+    "android:debug": "pnpm build && cap sync android && cd android && gradlew.bat assembleDebug",
+    "android:release": "pnpm build && cap sync android && cd android && gradlew.bat assembleRelease",
+    "android:bundle": "pnpm build && cap sync android && cd android && gradlew.bat bundleRelease",
+    "android:clean": "cd android && gradlew.bat clean",
+    "ios:open": "cap open ios",
+    "ios:run": "pnpm build && cap sync ios && cap run ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",
